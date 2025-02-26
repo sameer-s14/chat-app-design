@@ -1,0 +1,210 @@
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { COLORS } from "../constants";
+import { hs, ms, ws } from "../utils";
+import SearchingHeader from "../components/SearchingHeader";
+
+const MOCK_CONVERSATIONS = [
+  { id: "1", name: "Alice Johnson", avatar: "https://i.pravatar.cc/150?img=1" },
+  { id: "2", name: "Bob Smith", avatar: "https://i.pravatar.cc/150?img=2" },
+  { id: "3", name: "Charlie Brown", avatar: "https://i.pravatar.cc/150?img=3" },
+  { id: "4", name: "Alice Johnson", avatar: "https://i.pravatar.cc/150?img=4" },
+  { id: "5", name: "Bob Smith", avatar: "https://i.pravatar.cc/150?img=5" },
+  { id: "6", name: "Charlie Brown", avatar: "https://i.pravatar.cc/150?img=6" },
+  { id: "7", name: "Alice Johnson", avatar: "https://i.pravatar.cc/150?img=7" },
+  { id: "8", name: "Bob Smith", avatar: "https://i.pravatar.cc/150?img=8" },
+  { id: "9", name: "Charlie Brown", avatar: "https://i.pravatar.cc/150?img=9" },
+];
+
+const NewGroup = ({ navigation }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedContacts, setSelectedContacts] = useState({});
+  
+  const toggleSelection = (item) => {
+    let copiedIds = { ...selectedContacts };
+    if (copiedIds[item?.id]) {
+      delete copiedIds[item?.id]
+    } else {
+      copiedIds = { ...copiedIds, [item?.id]: item };
+    }
+    setSelectedContacts(copiedIds);
+  };
+
+  const removeContact = (id) => {
+    const copiedIds = { ...selectedContacts };
+    if (copiedIds[id]) {
+      delete copiedIds[id]
+      setSelectedContacts(copiedIds)
+    }
+  };
+
+  const filteredConversations = MOCK_CONVERSATIONS.filter((conv) =>
+    conv.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const renderItem = ({ item }) => {
+    const isSelected = !!selectedContacts[item?.id];
+
+    return (
+      <TouchableOpacity style={styles.chatItem} onPress={() => toggleSelection(item)}>
+        <View style={styles.avatarContainer}>
+          <Image source={{ uri: item.avatar }} style={styles.avatar} />
+          {isSelected && (
+            <View style={styles.checkIcon}>
+              <Ionicons name="checkmark-circle" size={20} color="green" />
+            </View>
+          )}
+        </View>
+        <View style={styles.chatDetails}>
+          <Text style={styles.name}>{item.name}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <SearchingHeader searchTerm={searchTerm} setSearchTerm={setSearchTerm} backHandler={() => navigation.goBack()} heading="New group" />
+
+      {/* Selected Contacts Row */}
+      {Object.keys(selectedContacts || {})?.length > 0 && (
+        <View style={styles.selectedContainer}>
+          <FlatList
+            horizontal
+            data={Object.values(selectedContacts || {})}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={styles.selectedItem}
+                onPress={() => removeContact(item.id)}
+              >
+                <View style={{ position: "relative", width: ms(55) }}>
+                  <Image source={{ uri: item.avatar }} style={styles.selectedAvatar} />
+                  <View
+                    style={styles.removeIcon}
+                  >
+                    <Ionicons name="close-circle" size={20} color={COLORS.RED} />
+                  </View>
+                </View>
+                <Text style={styles.selectedName} numberOfLines={1}>{item?.name}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      )}
+
+      {/* Contact List */}
+      <FlatList
+        data={filteredConversations}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+      />
+
+      <TouchableOpacity
+        style={styles.fabButton}
+        onPress={() => navigation.navigate("CreateGroup", { selectedContacts })}
+
+      >
+        <Ionicons name="arrow-forward" size={30} color={COLORS.WHITE} />
+      </TouchableOpacity>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.WHITE },
+  fabButton: {
+    position: "absolute",
+    bottom: hs(20),
+    right: ws(20),
+    width: ms(60),
+    height: ms(60),
+    borderRadius: 30,
+    backgroundColor: COLORS.PRIMARY,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 3,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: COLORS.LIGHT_GRAY,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+    height: hs(40),
+    backgroundColor: "white",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+  },
+  list: { paddingBottom: 20 },
+  chatItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+  },
+  avatarContainer: {
+    position: "relative",
+  },
+  avatar: {
+    width: ms(45),
+    height: ms(45),
+    borderRadius: 25,
+  },
+  checkIcon: {
+    position: "absolute",
+    bottom: -5,
+    right: 0,
+    backgroundColor: "white",
+    borderRadius: 10,
+  },
+  chatDetails: { marginLeft: 10 },
+  name: { fontWeight: "bold", fontSize: 16 },
+
+  /* Selected Contacts Row */
+  selectedContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.LIGHT_GRAY,
+  },
+  selectedItem: {
+    marginRight: 20,
+    marginVertical: 5,
+  },
+  selectedName: { width: ms(60), fontSize: 12, color: COLORS.GRAY },
+  selectedAvatar: {
+    width: ms(55),
+    height: ms(55),
+    borderRadius: 25,
+  },
+  removeIcon: {
+    position: "absolute",
+    bottom: -5,
+    right: 0,
+    backgroundColor: "white",
+    borderRadius: 10,
+  },
+});
+
+export default NewGroup;
