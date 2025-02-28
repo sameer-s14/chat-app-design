@@ -144,6 +144,10 @@ const Home: React.FC = ({ navigation }) => {
       toggleMenu();
       handleShowModal();
     }
+    if (item.label === "Profile") {
+      toggleMenu();
+      navigation.navigate('Profile');
+    }
   };
   return (
     <View style={{ flex: 1 }}>

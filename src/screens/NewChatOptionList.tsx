@@ -60,7 +60,11 @@ const NewChatOptionList = ({ navigation }) => {
         <TouchableOpacity style={[styles.chatItem, {
           borderBottomWidth: 1,
           borderBottomColor: "#eee",
-        }]}>
+        }]}
+        onPress={()=>{
+          navigation.navigate('CreateContact')
+        }}
+        >
           <Avatar icon="people" iconSize={35}/>
           <View style={styles.chatDetails}>
             <View style={styles.chatHeader}>

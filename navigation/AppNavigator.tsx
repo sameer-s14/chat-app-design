@@ -11,6 +11,7 @@ import MessagesList from '@/src/screens/Messages';
 import ProfileScreen from '@/src/screens/Profile';
 import SplashScreen from '@/src/screens/Splash';
 import NameInputScreen from '@/src/screens/NameInputScreen';
+import CreateContact from '@/src/screens/CreateContact';
 
 // Define types for your navigation
 export type RootStackParamList = {
@@ -74,6 +75,11 @@ export default function AppNavigator() {
          <Stack.Screen
           name="NameInputScreen"
           component={NameInputScreen}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="CreateContact"
+          component={CreateContact}
           options={{ headerShown: false }}
         />
         

@@ -8,7 +8,7 @@ export const userApi = createApi({
     updateUserProfile: builder.mutation({
       query: ({ phone, countryCode }) => ({
         url: 'user/profile',
-        method: 'POST',
+        method: 'PUT',
         body: { phone, countryCode },
       }),
     }),
