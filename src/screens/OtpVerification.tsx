@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -6,20 +6,39 @@ import {
   StyleSheet,
   Keyboard,
 } from "react-native";
-import { COLORS, Font } from "../constants";
+import { COLORS, Font, RESEND_SEC } from "../constants";
 import { OtpInput } from "react-native-otp-entry";
 import { hs, ws } from "../utils";
-import { useVerifyOtpMutation } from "../api/auth.api";
+import { useLoginWithPhoneMutation, useVerifyOtpMutation } from "../api/auth.api";
 import Loader from "../components/Loader";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../redux/authSlice";
+import { t } from "i18next";
 
 const OtpVerification = ({ navigation, route }) => {
   const [otp, setOtp] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const { phone, countryCode } = route?.params || {};
   const dispatch = useDispatch();
+  const [timer, setTimer] = useState(RESEND_SEC);
+
   const [verifyOtp, { isLoading }] = useVerifyOtpMutation();
+  const [loginWithPhone] = useLoginWithPhoneMutation();
+
+  const canResend: any = useRef();
+  useEffect(() => {
+    let interval;
+    if (timer > 0 && !canResend.current) {
+      interval = setInterval(() => {
+        setTimer(prevTimer => prevTimer - 1);
+      }, 1000);
+    } else if (timer === 0) {
+      canResend.current = true;
+      clearInterval(interval);
+    }
+
+    return () => clearInterval(interval);
+  }, [timer, canResend.current]);
 
   const handleVerifyOtp = async () => {
     try {
@@ -44,11 +63,15 @@ const OtpVerification = ({ navigation, route }) => {
     }
   };
 
+  function handleResend() {
+    const loginData = { phone: phone, countryCode: countryCode }
+    loginWithPhone(loginData).unwrap();
+  }
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Enter Verification Code</Text>
+      <Text style={styles.title}>{t('ENTER_VERIFICATION_CODE')}</Text>
       <Text style={styles.subtitle}>
-        Enter the 5-digit code sent to your phone
+        {t('ENTER_OTP_CODE_SENT')}
       </Text>
 
       <View style={styles.otpContainer}>
@@ -70,14 +93,25 @@ const OtpVerification = ({ navigation, route }) => {
           }}
         />
       </View>
-
+      <View style={styles.sendContainer}>
+        <Text style={styles.sendText}>{t('DIDNT_RECEIVE_CODE')}</Text>
+        {canResend.current ? (
+          <TouchableOpacity onPress={handleResend}>
+            <Text style={styles.sendBtn}>{t('SEND_AGAIN')}</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={styles.sendTextTime}>{`${t(
+            'RESEND_IN',
+          )} ${timer}s`}</Text>
+        )}
+      </View>
       {<Text style={styles.errorText}>{errorMessage}</Text>}
       <TouchableOpacity
         style={[styles.button, otp.length !== 5 && styles.disabledButton]}
         onPress={handleVerifyOtp}
         disabled={otp.length !== 5}
       >
-        <Text style={styles.buttonText}>Verify</Text>
+        <Text style={styles.buttonText}>{t('VERIFY')}</Text>
       </TouchableOpacity>
       {isLoading && <Loader />}
     </View>
@@ -136,7 +170,6 @@ const styles = StyleSheet.create({
     color: COLORS.PRIMARY,
     fontSize: 36,
     fontWeight: "400",
-    fontFamily: Font.RUBIK,
   },
   activePinCodeContainer: {
     borderColor: COLORS.PRIMARY,
@@ -149,4 +182,25 @@ const styles = StyleSheet.create({
     color: COLORS.RED,
     textAlign: "center",
   },
+  sendContainer: {
+    flexDirection: 'row',
+    gap: 5,
+    marginHorizontal: 10,
+    justifyContent: 'center',
+  },
+  sendText: {
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  sendTextTime: {
+    color: COLORS.DARK_SLATE_GRAY,
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  sendBtn: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: COLORS.PRIMARY,
+  }
+
 });

@@ -1,0 +1,16 @@
+{
+    "VERIFY_PHONE": "Verify Your Phone",
+    "VERIFY_PHONE_SUBTEXT": "Enter your phone number to continue",
+    "ENTER_PHONE": "Enter your mobile number",
+    "CONFIRM_NUMBER": "Is this your correct phone number?",
+    "EDIT": "Edit",
+    "VERIFY": "Verify",
+    "CONFIRM_CONTINUE": "Confirm & Continue",
+    "TERMS_TEXT": "By continuing, you agree to our",
+    "TERMS_SERVICE": "Terms of Service",
+    "ENTER_VERIFICATION_CODE": "Enter Verification Code",
+    "ENTER_OTP_CODE_SENT": "Enter the OTP code we just sent you on your registered Phone number",
+    "DIDNT_RECEIVE_CODE": "I didn't receive the code?",
+    "SEND_AGAIN": "Send again",
+    "RESEND_IN": "Resend in"
+}

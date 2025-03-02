@@ -3,8 +3,8 @@ import { TouchableOpacity, Animated, View, StyleSheet, Text, TextInput } from "r
 import { COLORS } from "../constants";
 import { hs } from "../utils";
 
-function Header({ backHandler, heading = 'Profile' }) {
-    return <View style={[styles.header]}>
+function Header({ backHandler, heading = 'Profile', borderBottomWidth = 1, }) {
+    return <View style={[styles.header, { borderBottomWidth }]}>
         <View style={[styles.titleContainer]}>
             <TouchableOpacity onPress={backHandler}>
                 <Ionicons name="arrow-back" size={25} color={COLORS.BLACK} />
@@ -22,7 +22,6 @@ const styles = StyleSheet.create({
         paddingBottom: 5,
         borderBottomColor: COLORS.LIGHT_GRAY,
         height: hs(60),
-        borderBottomWidth:1,
     },
     titleContainer: {
         flex: 1,

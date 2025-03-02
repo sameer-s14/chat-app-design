@@ -1,14 +1,10 @@
 import {
-  Image,
-  Linking,
   SafeAreaView,
   StyleSheet,
   Text,
   View,
-  Alert,
-  Platform,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { COLORS } from "../constants";
 import { useSelector } from "react-redux";
 
@@ -20,7 +16,7 @@ const SplashScreen = ({ navigation }) => {
       let route = "Login";
       if (token) {
         if (!user?.name) {
-            route = "NameInputScreen"
+          route = "NameInputScreen"
         } else {
           route = "Home";
         }
@@ -60,7 +56,6 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 33,
     fontWeight: "400",
-    color: COLORS.WHITE,
     marginTop: 10,
   },
 });

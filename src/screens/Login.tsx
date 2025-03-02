@@ -13,21 +13,25 @@ import CountryCodeHeader from "../components/CountryCodeHeader";
 import { isValidMobile } from "../utils";
 import { useLoginWithPhoneMutation } from "../api";
 import Loader from "../components/Loader";
+import { useTranslation } from "react-i18next";
 
 const Login = ({ navigation }) => {
+  const { t } = useTranslation();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [confirmationVisible, setConfirmationVisible] = useState(false);
   const initialValues = { code: "+91", flag: "🇮🇳", name: "India" };
   const [countryCode, setCountryCode] = useState(initialValues);
-
   const [loginWithPhone, { isLoading }] = useLoginWithPhoneMutation();
+
+
+
   // Function to handle phone number input
   const handlePhoneChange = (text) => {
     const value = text.replace(/\D/g, ""); // Remove non-numeric characters
     setPhoneNumber(value);
   };
-  
+
   const isValidPhoneNumber = isValidMobile(phoneNumber, countryCode?.code);
 
   async function handleLogin() {
@@ -36,9 +40,9 @@ const Login = ({ navigation }) => {
         console.log("❌ Invalid phone number");
       }
       setConfirmationVisible(false);
-      const loginData = { phone: phoneNumber, countryCode:countryCode?.code }
+      const loginData = { phone: phoneNumber, countryCode: countryCode?.code }
       await loginWithPhone(loginData).unwrap();
-      navigation.navigate("OtpVerification",loginData);
+      navigation.navigate("OtpVerification", loginData);
     } catch (err) {
       console.log(err)
       console.log('ERROR OCCURED IN', err)
@@ -49,9 +53,9 @@ const Login = ({ navigation }) => {
     <View style={styles.container}>
       {isLoading && <Loader />}
       {/* Header Section */}
-      <Text style={styles.header}>Verify Your Phone</Text>
+      <Text style={styles.header}>{t('VERIFY_PHONE')}</Text>
       <Text style={styles.subheader}>
-        Secure your account with a quick verification
+        {t('VERIFY_PHONE_SUBTEXT')}
       </Text>
 
       {/* Country Selector Modal */}
@@ -71,7 +75,7 @@ const Login = ({ navigation }) => {
         </TouchableOpacity>
         <TextInput
           style={styles.phoneInput}
-          placeholder="Enter phone number"
+          placeholder={t("ENTER_PHONE")}
           keyboardType="numeric"
           value={phoneNumber}
           onChangeText={handlePhoneChange}
@@ -92,8 +96,8 @@ const Login = ({ navigation }) => {
 
       {/* Terms and Conditions */}
       <Text style={styles.termsText}>
-        By tapping Continue, you agree to the{" "}
-        <Text style={styles.termsLink}>Terms of Service</Text>
+        {t('TERMS_TEXT') + " "}
+        <Text style={styles.termsLink}>{t('TERMS_SERVICE')}</Text>
       </Text>
 
       {/* Country Selection Modal */}
@@ -126,7 +130,7 @@ const Login = ({ navigation }) => {
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Is this your number correct?</Text>
+            <Text style={styles.modalTitle}>{t('CONFIRM_NUMBER')}</Text>
             <Text style={styles.modalPhoneNumber}>
               ({countryCode?.code}) {phoneNumber}
             </Text>
@@ -135,13 +139,13 @@ const Login = ({ navigation }) => {
                 onPress={() => setConfirmationVisible(false)}
                 style={[styles.modalButton]}
               >
-                <Text style={styles.modalButtonText}>Edit</Text>
+                <Text style={styles.modalButtonText}>{t('EDIT')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleLogin}
                 style={styles.modalButton}
               >
-                <Text style={styles.modalButtonText}>Verify</Text>
+                <Text style={styles.modalButtonText}>{t('VERIFY')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -206,7 +210,7 @@ const styles = StyleSheet.create({
   phoneInput: {
     flex: 1,
     fontSize: 16,
-    paddingVertical:10,
+    paddingVertical: 10,
     color: "#333",
   },
   submitButton: {

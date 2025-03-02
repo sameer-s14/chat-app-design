@@ -6,7 +6,6 @@ import {
   TextInput,
   View,
   TouchableOpacity,
-  Alert,
   BackHandler,
 } from "react-native";
 import { COLORS } from "../constants";
@@ -24,7 +23,7 @@ const NameInputScreen = ({ navigation }) => {
       const trimmedName = name.trim();
       updateUserProfile({ name: trimmedName }).unwrap();
       dispatch(updateUserDetails({ name: trimmedName }));
-      navigation.navigate("Home");
+      navigation.navigate("ProfileInputScreen");
     } catch (err) {
       console.log("ERROR OCCURED IN ", err);
     }
@@ -84,13 +83,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
-    padding: 16,
-    backgroundColor: "#f9f9f9",
+    paddingHorizontal: 10,
+    backgroundColor: COLORS.WHITE,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 15,
+    paddingVertical: 15,
     // backgroundColor: COLORS.WHITE,
     marginBottom: 20,
     borderBottomWidth: 1,
@@ -115,7 +114,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
   },
-  headerText: { fontSize: 16, fontWeight: "bold" },
+  headerText: { fontSize: 18, fontWeight: "bold" },
 });
 
 export default NameInputScreen;
