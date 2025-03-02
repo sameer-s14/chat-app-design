@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  TextInput,
   SectionList,
   TouchableOpacity,
   Image,
@@ -14,19 +13,23 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Avatar from "../components/Avatar";
 import SearchingHeader from "../components/SearchingHeader";
 import * as Contacts from "expo-contacts";
-import { useGetUserContactsQuery } from "../api";
+import {  useGetUserContactsQuery } from "../api";
 
-const MOCK_CONVERSATIONS = [
-  { id: "1", name: "Alice Johnson", avatar: "https://i.pravatar.cc/150?img=1", lastMessage: "Hey!", lastMessageTime: "2:30 PM", unreadCount: 2 },
-  { id: "2", name: "Bob Smith", avatar: "https://i.pravatar.cc/150?img=2", lastMessage: "Meeting at 4 PM", lastMessageTime: "1:45 PM", unreadCount: 1 },
-  { id: "3", name: "Charlie Brown", avatar: "https://i.pravatar.cc/150?img=3", lastMessage: "Sounds good!", lastMessageTime: "Yesterday", unreadCount: 0 },
-];
 
 const NewChatOptionList = ({ navigation }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [contacts, setContacts] = useState([]);
-  // const { data, error } = useGetUserContactsQuery();
+  const { data, refetch } = useGetUserContactsQuery(undefined, {
+    skip: contacts.length > 0,
+  });
 
+  const savedContacts = data?.data || {};
+  useEffect(() => {
+    if (savedContacts?.contacts) {
+      setContacts(savedContacts.contacts);
+    }
+  }, [savedContacts]);
+  
   useEffect(() => {
     requestContactsPermission();
   }, []);
@@ -45,7 +48,6 @@ const NewChatOptionList = ({ navigation }) => {
       const { data } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
       });
-
       if (data.length > 0) {
         setContacts(data);
       }
@@ -54,21 +56,27 @@ const NewChatOptionList = ({ navigation }) => {
     }
   };
 
-  const filteredConversations = MOCK_CONVERSATIONS.filter((conv) =>
+  const filteredConversations = savedContacts?.contacts?.filter((conv) =>
     conv.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredContacts = contacts?.filter((contact) =>
+    contact?.name?.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    !savedContacts?.contacts?.some(saved => saved.phoneNumber === contact.phoneNumbers?.[0]?.number)
   );
 
   const sections = [
     {
       title: "Saved contacts",
-      data: filteredConversations,
+      data: filteredConversations || [],
       renderItem: ({ item }) => (
         <TouchableOpacity style={styles.chatItem}>
-          <Image source={{ uri: item.avatar }} style={styles.avatar} />
+          {item?.profile ? <Image source={{ uri: item.profile }} style={styles.avatar} /> : <View style={[styles.avatar, styles.defaultAvatar]}>
+            <FontAwesome6 name="user-large" size={20} color={COLORS.WHITE} />
+          </View>}
           <View style={styles.chatDetails}>
             <View style={styles.chatHeader}>
               <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.time}>{item.lastMessageTime}</Text>
             </View>
             <Text style={styles.lastMessage} numberOfLines={1}>{item.lastMessage}</Text>
           </View>
@@ -77,7 +85,7 @@ const NewChatOptionList = ({ navigation }) => {
     },
     {
       title: "Invite users",
-      data: contacts,
+      data: filteredContacts || [],
       renderItem: ({ item }) => (
         <TouchableOpacity style={styles.chatItem}>
           <View style={[styles.avatar, styles.defaultAvatar]}>
@@ -87,13 +95,9 @@ const NewChatOptionList = ({ navigation }) => {
             <View style={styles.chatHeader}>
               <Text style={styles.name}>{item.name}</Text>
               <TouchableOpacity style={{ paddingHorizontal: 10, paddingVertical: 5 }}>
-                <Text style={{fontSize: 12, color: COLORS.PRIMARY}}>Invite</Text>
+                <Text style={{ fontSize: 12, color: COLORS.PRIMARY }}>Invite</Text>
               </TouchableOpacity>
             </View>
-            {/* {item.phoneNumbers?.length > 0 && (
-              <Text style={styles.lastMessage} numberOfLines={1}>{item.phoneNumbers[0].number}</Text>
-            )} */}
-
           </View>
         </TouchableOpacity>
       ),
@@ -129,7 +133,7 @@ const NewChatOptionList = ({ navigation }) => {
         sections={sections}
         keyExtractor={(item, index) => item.id || index.toString()}
         renderItem={({ section, item }) => section.renderItem({ item })}
-        renderSectionHeader={({ section }) => <Text style={styles.sectionHeader}>{section.title}</Text>}
+        renderSectionHeader={({ section }) => section?.data?.length > 0 ? <Text style={styles.sectionHeader}>{section.title}</Text> : null}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       />

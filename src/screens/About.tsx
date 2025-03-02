@@ -62,6 +62,7 @@ const AboutScreen = ({ navigation }) => {
         try {
             await updateUserProfile({ bio: about }).unwrap();
             dispatch(updateUserDetails({ bio: about }));
+            navigation.goBack()
         } catch (err) {
             console.log("ERROR OCCURED IN ", err);
         }

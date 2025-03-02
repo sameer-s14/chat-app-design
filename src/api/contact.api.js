@@ -1,8 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { BASE_URL } from "../config";
 
-export const contactApi = createApi({
-    reducerPath: "contactApi",
+export const contactsApi = createApi({
+    reducerPath: "contactsApi",
     baseQuery: fetchBaseQuery({
         baseUrl: BASE_URL,
         prepareHeaders: (headers, { getState }) => {
@@ -13,14 +13,21 @@ export const contactApi = createApi({
             return headers;
         },
     }),
+    tagTypes: ["Contacts"],
     endpoints: (builder) => ({
         getUserContacts: builder.query({
-            query: () => ({
+            query: () => "contacts",
+            providesTags: ["Contacts"],
+        }),
+        addUserContact: builder.mutation({
+            query: (newContact) => ({
                 url: "contacts",
-                method: "GET",
+                method: "POST",
+                body: newContact,
             }),
+            invalidatesTags: ["Contacts"], // <-- Refresh cache when a new contact is added
         }),
     }),
 });
 
-export const { useGetUserContactsQuery } = contactApi;
+export const { useGetUserContactsQuery, useAddUserContactMutation } = contactsApi;
