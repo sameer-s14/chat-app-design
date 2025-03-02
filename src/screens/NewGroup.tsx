@@ -8,11 +8,12 @@ import {
   Image,
   StyleSheet,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "../constants";
 import { hs, ms, ws } from "../utils";
 import SearchingHeader from "../components/SearchingHeader";
+import { useGetUserContactsQuery } from "../api";
 
 const MOCK_CONVERSATIONS = [
   { id: "1", name: "Alice Johnson", avatar: "https://i.pravatar.cc/150?img=1" },
@@ -29,7 +30,7 @@ const MOCK_CONVERSATIONS = [
 const NewGroup = ({ navigation }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContacts, setSelectedContacts] = useState({});
-  
+
   const toggleSelection = (item) => {
     let copiedIds = { ...selectedContacts };
     if (copiedIds[item?.id]) {
@@ -48,8 +49,14 @@ const NewGroup = ({ navigation }) => {
     }
   };
 
-  const filteredConversations = MOCK_CONVERSATIONS.filter((conv) =>
-    conv.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const { data } = useGetUserContactsQuery(undefined, {
+    // skip: contacts.length > 0,
+  });
+  const savedContacts = data?.data || {};
+
+  const filteredConversations = savedContacts?.contacts?.filter((contact) =>
+    !searchTerm || contact?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+
   );
 
   const renderItem = ({ item }) => {
@@ -58,7 +65,9 @@ const NewGroup = ({ navigation }) => {
     return (
       <TouchableOpacity style={styles.chatItem} onPress={() => toggleSelection(item)}>
         <View style={styles.avatarContainer}>
-          <Image source={{ uri: item.avatar }} style={styles.avatar} />
+          {item?.profile ? <Image source={{ uri: item?.profile }} style={styles.avatar} /> : <View style={[styles.avatar, styles.defaultAvatar]}>
+            <FontAwesome6 name="user-large" size={20} color={COLORS.WHITE} />
+          </View>}
           {isSelected && (
             <View style={styles.checkIcon}>
               <Ionicons name="checkmark-circle" size={20} color="green" />
@@ -88,7 +97,9 @@ const NewGroup = ({ navigation }) => {
                 onPress={() => removeContact(item.id)}
               >
                 <View style={{ position: "relative", width: ms(55) }}>
-                  <Image source={{ uri: item.avatar }} style={styles.selectedAvatar} />
+                  {item?.profile ? <Image source={{ uri: item.profile }} style={styles.selectedAvatar} /> : <View style={[styles.avatar, styles.defaultAvatar, styles.selectedAvatar]}>
+                    <FontAwesome6 name="user-large" size={20} color={COLORS.WHITE} />
+                  </View>}
                   <View
                     style={styles.removeIcon}
                   >
@@ -140,6 +151,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     zIndex: 3,
+  },
+  defaultAvatar: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#B0BEC5",
   },
   header: {
     flexDirection: "row",

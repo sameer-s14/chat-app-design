@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../components/Header";
-import { Image, SectionList, StyleSheet, Text } from "react-native";
+import { ActivityIndicator, Image, SectionList, StyleSheet, Text } from "react-native";
 import { COLORS } from "../constants";
 import { View } from "react-native";
 import { TouchableOpacity } from "react-native";
@@ -12,7 +12,9 @@ import CountryCodeHeader from "../components/CountryCodeHeader";
 import * as Contacts from "expo-contacts";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { useAddUserContactMutation, useGetUserContactsQuery } from "../api";
-import { isValidMobile } from "../utils";
+import { fetchUserContacts, isValidMobile, requestContactsPermission } from "../utils";
+import ErrorModal from "../components/ErrorModal";
+import UserContacts from "../components/UserContact";
 
 const CreateContact = ({ navigation }) => {
   const { t } = useTranslation();
@@ -20,102 +22,24 @@ const CreateContact = ({ navigation }) => {
   const initialValues = { code: "+91", flag: "🇮🇳", name: "India" };
   const [countryCode, setCountryCode] = useState(initialValues);
   const [phoneNumber, setPhoneNumber] = useState("");
-
-  const handlePhoneChange = (text) => {
+  const [error, setError] = useState("");
+  const handlePhoneChange = (text: string) => {
     const value = text.replace(/\D/g, ""); // Remove non-numeric characters
     setPhoneNumber(value);
   };
-  const [contacts, setContacts] = useState([]);
-  const { data, refetch } = useGetUserContactsQuery(undefined, {
-    skip: contacts.length > 0,
-  });
-  const [addUserContact, { isError }] = useAddUserContactMutation();
-  console.log(">>>>>>>>>>",isError)
-  const savedContacts = data?.data || {};
-  useEffect(() => {
-    if (savedContacts?.contacts) {
-      setContacts(savedContacts.contacts);
-    }
-  }, [savedContacts]);
+  const [addUserContact, { isLoading }] = useAddUserContactMutation();
 
-  useEffect(() => {
-    requestContactsPermission();
-  }, []);
-
-  const requestContactsPermission = async () => {
-    const { status } = await Contacts.requestPermissionsAsync();
-    if (status === "granted") {
-      fetchContacts();
-    } else {
-      console.warn("Contacts permission denied");
-    }
-  };
-
-  const fetchContacts = async () => {
+  async function handleAddContact() {
     try {
-      const { data } = await Contacts.getContactsAsync({
-        fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-      });
-      if (data.length > 0) {
-        setContacts(data);
-      }
-    } catch (error) {
-      console.error("Error fetching contacts: ", error);
+      await addUserContact({
+        phone: phoneNumber,
+        countryCode: countryCode?.code
+      }).unwrap();
+      setPhoneNumber('')
+    } catch (err) {
+      setError(err?.data?.message || err?.message || 'Unable to add contact')
     }
-  };
-  const filteredConversations = savedContacts?.contacts?.filter((conv) =>
-    contact.phoneNumbers?.[0]?.number?.includes(phoneNumber)
-  );
 
-  const filteredContacts = contacts?.filter((contact) =>
-    contact.phoneNumbers?.[0]?.number?.includes(phoneNumber) &&
-    !savedContacts?.contacts?.some(saved => saved.phoneNumber === contact.phoneNumbers?.[0]?.number)
-  );
-
-  const sections = [
-    {
-      title: "Saved contacts",
-      data: filteredConversations || [],
-      renderItem: ({ item }) => (
-        <TouchableOpacity style={styles.chatItem}>
-          {item?.profile ? <Image source={{ uri: item.profile }} style={styles.avatar} /> : <View style={[styles.avatar, styles.defaultAvatar]}>
-            <FontAwesome6 name="user-large" size={20} color={COLORS.WHITE} />
-          </View>}
-          <View style={styles.chatDetails}>
-            <View style={styles.chatHeader}>
-              <Text style={styles.name}>{item.name}</Text>
-            </View>
-            <Text style={styles.lastMessage} numberOfLines={1}>{item.lastMessage}</Text>
-          </View>
-        </TouchableOpacity>
-      ),
-    },
-    {
-      title: "Invite users",
-      data: filteredContacts || [],
-      renderItem: ({ item }) => (
-        <TouchableOpacity style={styles.chatItem}>
-          <View style={[styles.avatar, styles.defaultAvatar]}>
-            <FontAwesome6 name="user-large" size={20} color={COLORS.WHITE} />
-          </View>
-          <View style={styles.chatDetails}>
-            <View style={styles.chatHeader}>
-              <Text style={styles.name}>{item.name}</Text>
-              <TouchableOpacity style={{ paddingHorizontal: 10, paddingVertical: 5 }}>
-                <Text style={{ fontSize: 12, color: COLORS.PRIMARY }}>Invite</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      ),
-    },
-  ];
-
-  function handleAddContact() {
-    addUserContact({
-      phone: phoneNumber,
-      countryCode: countryCode?.code
-    })
   }
 
   const isValidPhoneNumber = isValidMobile(phoneNumber, countryCode?.code);
@@ -137,11 +61,13 @@ const CreateContact = ({ navigation }) => {
         </View>
         <TouchableOpacity
           style={[styles.button,
-          !isValidPhoneNumber && { opacity: 0.5 },
+          (!isValidPhoneNumber || isLoading) && { opacity: 0.5 },
           ]}
+          disabled={!isValidPhoneNumber || isLoading}
           onPress={handleAddContact}
         >
-          <Text style={styles.buttonText}>Add</Text>
+          {!isLoading ? <Text style={styles.buttonText}>Add</Text> :
+            <ActivityIndicator color={COLORS.WHITE} />}
         </TouchableOpacity>
 
         <CountryPicker
@@ -165,14 +91,8 @@ const CreateContact = ({ navigation }) => {
       </View>
 
 
-      <SectionList
-        sections={sections}
-        keyExtractor={(item, index) => item.id || index.toString()}
-        renderItem={({ section, item }) => section.renderItem({ item })}
-        renderSectionHeader={({ section }) => section?.data?.length > 0 ? <Text style={styles.sectionHeader}>{section.title}</Text> : null}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-      />
+      <UserContacts search={phoneNumber} mobileContactHeading={"Invite Users"} savedContactHeading={"Saved Contacts"} searchType="number"/>
+      {error && <ErrorModal message={error} isVisible={error?.length > 0} onClose={() => setError('')} />}
     </SafeAreaView>
   );
 };

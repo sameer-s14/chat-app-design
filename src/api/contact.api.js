@@ -25,7 +25,7 @@ export const contactsApi = createApi({
                 method: "POST",
                 body: newContact,
             }),
-            invalidatesTags: ["Contacts"], // <-- Refresh cache when a new contact is added
+            invalidatesTags: ["Contacts"],
         }),
     }),
 });
