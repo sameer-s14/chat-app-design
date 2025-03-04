@@ -22,7 +22,6 @@ import { useUpdateUserProfileMutation } from "../api";
 import { ms } from "../utils";
 import { COLORS } from "../constants";
 import { useDispatch, useSelector } from "react-redux";
-import { FilePicker } from "../components/FilePicker";
 import { updateUserDetails } from "../redux/authSlice";
 import CommonBottomSheet from "../components/CommonBottomSheet";
 import { Alert } from "react-native";

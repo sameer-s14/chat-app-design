@@ -7,36 +7,76 @@ import {
     TouchableOpacity,
     Image,
     StyleSheet,
+    Alert,
+    Platform,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "../constants";
 import { hs, ms, ws } from "../utils";
+import * as ImagePicker from "expo-image-picker";
+import { useCreateGroupChatMutation } from "../api";
+import Header from "../components/Header";
 
 const CreateGroup = ({ navigation, route }) => {
+    const [createGroupChat] = useCreateGroupChatMutation();
     const { selectedContacts } = route.params || {};
     const selectedUsersList = Object.values(selectedContacts || {});
     const [groupName, setGroupName] = useState("");
     const [groupImage, setGroupImage] = useState(null);
 
     const pickImage = async () => {
-        // Image picker logic
+        const permissionResult =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permissionResult.granted) {
+            Alert.alert(
+                "Permission required",
+                "You need to grant camera roll access to change your profile picture."
+            );
+            return;
+        }
+
+        const pickerResult = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 1,
+        });
+
+        if (pickerResult?.assets[0]) {
+            setGroupImage(pickerResult?.assets[0]);
+        }
     };
 
+    async function handleSubmit() {
+        try {
+            const formData = new FormData();
+            formData.append('name', groupName);
+            if (groupImage) {
+                const adjustedUri =
+                    Platform.OS === 'android' ? groupImage?.uri : groupImage?.uri.replace('file://', '');
+                formData.append("file", {
+                    uri: adjustedUri,
+                    name: groupImage.name || "upload.jpg",
+                    type: groupImage.mimeType || "image/jpeg",
+                } as any);
+            }
+            Object.keys(selectedContacts)?.forEach((userId) => formData.append('users', userId));
+            const { error } = await createGroupChat(formData);
+            if(!error){
+                navigation.navigate('Home')
+            }
+        } catch (err) {
+            console.log(">>>>>>>>>..", err)
+        }
+    }
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <View style={styles.titleContainer}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={25} color={COLORS.BLACK} />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>New group</Text>
-                </View>
-            </View>
+            <Header backHandler={() => navigation.goBack()} borderBottomWidth={0} heading="New group" />
             <View style={styles.inputContainer}>
                 <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
                     {groupImage ? (
-                        <Image source={{ uri: groupImage }} style={styles.groupImage} />
+                        <Image source={{ uri: groupImage?.uri }} style={styles.groupImage} />
                     ) : (
                         <Ionicons name="camera" size={25} color={COLORS.DARK_SLATE_GRAY} />
                     )}
@@ -65,9 +105,12 @@ const CreateGroup = ({ navigation, route }) => {
                             contentContainerStyle={{ flexGrow: 1 }}
                             renderItem={({ item }) => (
                                 <View style={styles.selectedItem}>
-                                    <View style={{ width: ms(55) }}>
-                                        <Image source={{ uri: item.avatar }} style={styles.selectedAvatar} />
-                                    </View>
+                                    {item?.profile ?
+                                        <Image source={{ uri: item.profile }} style={[styles.selectedAvatar]} />
+                                        :
+                                        <View style={[styles.defaultAvatar, styles.selectedAvatar]}>
+                                            <FontAwesome6 name="user-large" size={20} color={COLORS.WHITE} />
+                                        </View>}
                                     <Text style={styles.selectedName} numberOfLines={1}>{item?.name}</Text>
                                 </View>
                             )}
@@ -77,9 +120,7 @@ const CreateGroup = ({ navigation, route }) => {
             </View>
             <TouchableOpacity
                 style={styles.fabButton}
-                onPress={() => navigation.navigate("CreateGroup", { selectedContacts })}
-
-            >
+                onPress={handleSubmit}>
                 <Ionicons name="checkmark" size={20} color={COLORS.WHITE} />
             </TouchableOpacity>
         </SafeAreaView>
@@ -175,8 +216,8 @@ const styles = StyleSheet.create({
         width: ms(55),
     },
     selectedAvatar: {
-        width: 55,
-        height: 55,
+        width: ms(55),
+        height: ms(55),
         borderRadius: 27.5,
     },
     selectedName: {
@@ -196,6 +237,11 @@ const styles = StyleSheet.create({
         color: COLORS.WHITE,
         fontSize: 16,
         fontWeight: "bold",
+    },
+    defaultAvatar: {
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#B0BEC5",
     },
 });
 

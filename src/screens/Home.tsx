@@ -18,6 +18,7 @@ import { hs, ms, ws } from "../utils";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../redux/authSlice";
 import ConfirmationModal from "@/components/ConfirmationModal";
+import { useGetAllChatsQuery } from "../api";
 
 // Type definitionsup
 interface Conversation {
@@ -72,6 +73,8 @@ const MENU_OPTIONS = [
 ];
 
 const Home: React.FC = ({ navigation }) => {
+  const { data, isLoading, isError,error } = useGetAllChatsQuery(undefined);
+  console.log(">>>>>>>>>>>", {isLoading, isError, data: data?.data,error})
   const [searchTerm, setSearchTerm] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const slideAnim = useState(new Animated.Value(-280))[0];

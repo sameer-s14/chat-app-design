@@ -7,14 +7,10 @@ import {
   Image,
   StyleSheet,
 } from "react-native";
-import { FontAwesome6 } from "@expo/vector-icons";
 import { COLORS } from "../constants";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Avatar from "../components/Avatar";
 import SearchingHeader from "../components/SearchingHeader";
-import * as Contacts from "expo-contacts";
-import { useGetUserContactsQuery } from "../api";
-import { fetchUserContacts } from "../utils";
 import UserContacts from "../components/UserContact";
 
 

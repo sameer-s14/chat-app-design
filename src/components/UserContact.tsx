@@ -8,7 +8,7 @@ import { COLORS } from "../constants";
 const UserContacts = ({ search, savedContactHeading, mobileContactHeading, searchType = "name" }: any) => {
     const [contacts, setContacts] = useState([]);
 
-    const { data } = savedContactHeading ? useGetUserContactsQuery(undefined, {
+    const { data,isLoading } = savedContactHeading ? useGetUserContactsQuery(undefined, {
         // skip: contacts.length > 0,
     }) : { data: { data: { contacts: [] } } };
     const savedContacts = data?.data || {};
@@ -31,14 +31,13 @@ const UserContacts = ({ search, savedContactHeading, mobileContactHeading, searc
         (!search || (
             searchType === "name"
                 ? contact?.name?.toLowerCase().includes(search.toLowerCase())
-                : contact?.phoneNumbers?.some((num) => num.number.includes(search))
+                : contact?.phoneNumbers?.some((num) => num?.number?.replaceAll(' ','').includes(search))
         )) &&
-        !savedContacts?.contacts?.some(saved => saved.phoneNumber === contact.phoneNumbers?.[0]?.number)
+        !savedContacts?.contacts?.some(saved => saved.phoneNumber === saved?.phoneNumbers?.[0]?.number?.replaceAll(' ',''))
     );
 
     const sections = []
     if (savedContactHeading || (!savedContactHeading && !mobileContactHeading)) {
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>MATHCEFD")
         sections?.push({
             title: savedContactHeading || '',
             data: filteredConversations || [],
@@ -61,7 +60,8 @@ const UserContacts = ({ search, savedContactHeading, mobileContactHeading, searc
         sections.push({
             title: mobileContactHeading,
             data: filteredContacts || [],
-            renderItem: ({ item }) => (
+            renderItem: ({ item }) => {
+                return (
                 <TouchableOpacity style={styles.chatItem}>
                     <View style={[styles.avatar, styles.defaultAvatar]}>
                         <FontAwesome6 name="user-large" size={20} color={COLORS.WHITE} />
@@ -75,11 +75,10 @@ const UserContacts = ({ search, savedContactHeading, mobileContactHeading, searc
                         </View>
                     </View>
                 </TouchableOpacity>
-            ),
+            )},
         })
     }
 
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>..", sections[0]?.data?.length)
     return <SectionList
         sections={sections}
         keyExtractor={(item, index) => item.id || index.toString()}

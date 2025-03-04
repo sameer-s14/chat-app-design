@@ -9,10 +9,8 @@ import { TextInput } from "react-native";
 import { useTranslation } from "react-i18next";
 import { CountryPicker } from "react-native-country-codes-picker";
 import CountryCodeHeader from "../components/CountryCodeHeader";
-import * as Contacts from "expo-contacts";
-import { FontAwesome6 } from "@expo/vector-icons";
-import { useAddUserContactMutation, useGetUserContactsQuery } from "../api";
-import { fetchUserContacts, isValidMobile, requestContactsPermission } from "../utils";
+import { useAddUserContactMutation } from "../api";
+import { isValidMobile } from "../utils";
 import ErrorModal from "../components/ErrorModal";
 import UserContacts from "../components/UserContact";
 
@@ -91,7 +89,7 @@ const CreateContact = ({ navigation }) => {
       </View>
 
 
-      <UserContacts search={phoneNumber} mobileContactHeading={"Invite Users"} savedContactHeading={"Saved Contacts"} searchType="number"/>
+      <UserContacts search={phoneNumber} mobileContactHeading={"Invite Users"} savedContactHeading={"Saved Contacts"} searchType="number" />
       {error && <ErrorModal message={error} isVisible={error?.length > 0} onClose={() => setError('')} />}
     </SafeAreaView>
   );
