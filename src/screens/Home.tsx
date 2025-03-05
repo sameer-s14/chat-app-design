@@ -12,19 +12,20 @@ import {
   Modal,
   StatusBar,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../constants";
 import { hs, ms, ws } from "../utils";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../redux/authSlice";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { useGetAllChatsQuery } from "../api";
+import Loader from "../components/Loader";
 
 // Type definitionsup
 interface Conversation {
-  id: string;
+  _id: string;
   name: string;
-  avatar: string;
+  image: string;
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;
@@ -32,25 +33,25 @@ interface Conversation {
 
 const MOCK_CONVERSATIONS: Conversation[] = [
   {
-    id: "1",
+    _id: "1",
     name: "Alice Johnson",
-    avatar: "https://i.pravatar.cc/150?img=1",
+    image: "https://i.pravatar.cc/150?img=1",
     lastMessage: "Hey, how are you doing?",
     lastMessageTime: "2:30 PM",
     unreadCount: 2,
   },
   {
-    id: "2",
+    _id: "2",
     name: "Bob Smith",
-    avatar: "https://i.pravatar.cc/150?img=2",
+    image: "https://i.pravatar.cc/150?img=2",
     lastMessage: "Meeting at 4 PM",
     lastMessageTime: "1:45 PM",
     unreadCount: 1,
   },
   {
-    id: "3",
+    _id: "3",
     name: "Charlie Brown",
-    avatar: "https://i.pravatar.cc/150?img=3",
+    image: "https://i.pravatar.cc/150?img=3",
     lastMessage: "Sounds good!",
     lastMessageTime: "Yesterday",
     unreadCount: 0,
@@ -73,8 +74,8 @@ const MENU_OPTIONS = [
 ];
 
 const Home: React.FC = ({ navigation }) => {
-  const { data, isLoading, isError,error } = useGetAllChatsQuery(undefined);
-  console.log(">>>>>>>>>>>", {isLoading, isError, data: data?.data,error})
+  const { data, isLoading, isError, error } = useGetAllChatsQuery(undefined);
+  const chatData = data?.data || {};
   const [searchTerm, setSearchTerm] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const slideAnim = useState(new Animated.Value(-280))[0];
@@ -110,34 +111,43 @@ const Home: React.FC = ({ navigation }) => {
     navigation.navigate("SelectUser");
   };
 
-  const filteredConversations = MOCK_CONVERSATIONS.filter((conv) =>
+  const filteredConversations = (chatData?.chatsFound || [])?.filter((conv) =>
     conv.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const renderItem = ({ item }: { item: Conversation }) => (
-    <TouchableOpacity
-      style={styles.chatItem}
-      onPress={() => navigation.navigate("MessagesList")}
-    >
-      <Image source={{ uri: item.avatar }} style={styles.avatar} />
-      <View style={styles.chatDetails}>
-        <View style={styles.chatHeader}>
-          <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.time}>{item.lastMessageTime}</Text>
-        </View>
-        <View style={styles.messageContainer}>
-          <Text style={styles.lastMessage} numberOfLines={1}>
-            {item.lastMessage}
-          </Text>
-          {item.unreadCount > 0 && (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadText}>{item.unreadCount}</Text>
+  const renderItem = ({ item, index }: { item: Conversation }) => {
+    const mock = MOCK_CONVERSATIONS[index];
+    return (
+      <TouchableOpacity
+        style={styles.chatItem}
+        onPress={() => navigation.navigate("MessagesList", { chatId: item?._id, name: item?.name, image: item?.image })}
+      >
+        {
+          item?.image ? <Image source={{ uri: item?.image }} style={styles.avatar} /> :
+            <View style={[styles.avatar, styles.defaultAvatar]}>
+              <FontAwesome6 name="user-large" size={20} color={COLORS.WHITE} />
             </View>
-          )}
+        }
+
+        <View style={styles.chatDetails}>
+          <View style={styles.chatHeader}>
+            <Text style={styles.name}>{item.name}</Text>
+            <Text style={styles.time}>{mock?.lastMessageTime}</Text>
+          </View>
+          <View style={styles.messageContainer}>
+            <Text style={styles.lastMessage} numberOfLines={1}>
+              {mock?.lastMessage}
+            </Text>
+            {mock?.unreadCount > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadText}>{mock?.unreadCount}</Text>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    )
+  };
 
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -154,6 +164,7 @@ const Home: React.FC = ({ navigation }) => {
   };
   return (
     <View style={{ flex: 1 }}>
+      {isLoading && <Loader />}
       {menuOpen && (
         <TouchableWithoutFeedback onPress={toggleMenu}>
           <View style={styles.overlay} />
@@ -178,7 +189,7 @@ const Home: React.FC = ({ navigation }) => {
 
       <FlatList
         data={filteredConversations}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => index.toString()}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
@@ -276,6 +287,11 @@ const styles = StyleSheet.create({
     height: ms(50),
     borderRadius: 25,
     marginRight: 10,
+  },
+  defaultAvatar: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#B0BEC5",
   },
   chatDetails: {
     flex: 1,

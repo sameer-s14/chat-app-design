@@ -4,14 +4,16 @@ import { BASE_URL } from "../config";
 export const chatApi = createApi({
     reducerPath: "chatApi",
     baseQuery: fetchBaseQuery({
-        baseUrl: BASE_URL, prepareHeaders: (headers, { getState }) => {
-            const token = getState().auth.token;
+        baseUrl: BASE_URL,
+        prepareHeaders: (headers, { getState }) => {
+            const token = getState()?.auth?.token;
             if (token) {
-                headers.set("Authorization", `Bearer ${token}`);
+                headers.append("Authorization", `Bearer ${token}`);
             }
             return headers;
         },
     }),
+    tagTypes: ["Chats"],  // Define tag for caching
     endpoints: (builder) => ({
         createGroupChat: builder.mutation({
             query: (body) => ({
@@ -19,18 +21,28 @@ export const chatApi = createApi({
                 method: "POST",
                 body,
             }),
+            invalidatesTags: ["Chats"],  // Invalidate cache to refresh chats
         }),
         createOneToOneChat: builder.mutation({
             query: (userId) => ({
                 url: `chats/one-to-one/${userId}`,
                 method: "POST",
-                body,
             }),
+            invalidatesTags: ["Chats"],
         }),
         getAllChats: builder.query({
-            query: () => "chats/all",
+            query: (params) => ({
+                url: "chats/all",
+                params, 
+            }),
+            providesTags: ["Chats"],
+            keepUnusedDataFor: 10,
         }),
     }),
 });
 
-export const { useCreateGroupChatMutation, useCreateOneToOneChatMutation, useGetAllChatsQuery } = chatApi;
+export const {
+    useCreateGroupChatMutation,
+    useCreateOneToOneChatMutation,
+    useGetAllChatsQuery
+} = chatApi;

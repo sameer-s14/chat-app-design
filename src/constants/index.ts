@@ -3,3 +3,4 @@ export * from './fonts';
 export * from './strings';
 export * from './app.contant';
 export * from './assets.constant';
+export * from './socket.constant';

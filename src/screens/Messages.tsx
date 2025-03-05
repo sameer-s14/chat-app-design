@@ -1,10 +1,11 @@
-import React, { useState } from "react";
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Image } from "react-native";
+import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { COLORS } from "../constants";
+import { COLORS, SOCKET_EVENTS } from "../constants";
 import Avatar from "../components/Avatar";
-import { ws } from "../utils";
+import { ms, ws } from "../utils";
+import { useSelector } from "react-redux";
 
 const initialMessages = [
     { id: "1", type: "message", sender: "John", text: "Hello everyone!" },
@@ -29,10 +30,12 @@ const MessageItem = ({ item }) => {
     );
 };
 
-export default function ChatScreen({ navigation }) {
+export default function ChatScreen({ navigation, route }) {
     const [messages, setMessages] = useState(initialMessages);
     const [message, setMessage] = useState("");
-
+    const socket = useSelector((state) => state.socket);
+    const { user } = useSelector((state) => state?.auth);
+    const chatData = route?.params
     const sendMessage = () => {
         if (message.trim().length > 0) {
             setMessages((prevMessages) => [
@@ -43,6 +46,12 @@ export default function ChatScreen({ navigation }) {
         }
     };
 
+    useEffect(() => {
+        if (socket?.connected && chatData?.chatId) {
+            socket.emit(SOCKET_EVENTS.JOIN_CHAT, { userId: user?.userId, chatId: chatData?.chatId })
+        }
+    }, [socket])
+
     return (
         <SafeAreaView style={styles.container}>
             {/* HEADER */}
@@ -50,8 +59,13 @@ export default function ChatScreen({ navigation }) {
                 <TouchableOpacity style={{ marginHorizontal: 10 }} onPress={() => navigation.goBack()}>
                     <Ionicons name="arrow-back" size={24} color={COLORS.BLACK} />
                 </TouchableOpacity>
-                <Avatar imageUrl={"https://i.pravatar.cc/150?img=1"} size={35} style={styles.profileImage} />
-                <Text style={styles.headerText}>Group Chat</Text>
+                {
+                    chatData?.image ? <Image source={{ uri: chatData?.image }} style={styles.avatar} /> :
+                        <View style={[styles.avatar, styles.defaultAvatar]}>
+                            <FontAwesome6 name="user-large" size={15} colo6FontAwesome6={COLORS.WHITE} />
+                        </View>
+                }
+                <Text style={styles.headerText}>{chatData?.name}</Text>
             </View>
 
             {/* MESSAGES LIST */}
@@ -100,7 +114,17 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         backgroundColor: COLORS.PALE_GRAY
     },
-
+    avatar: {
+        width: ms(35),
+        height: ms(35),
+        borderRadius: 25,
+        marginRight: 10,
+    },
+    defaultAvatar: {
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#B0BEC5",
+    },
     messageRow: {
         flexDirection: "row",
         alignItems: "flex-start",

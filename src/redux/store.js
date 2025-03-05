@@ -3,6 +3,7 @@ import { persistStore, persistReducer } from "redux-persist";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
 import authReducer from "./authSlice";
+import socketReducer from "./socketSlice";
 import { authApi, chatApi, contactApi, contactsApi, userApi } from "../api";
 
 // Persist Configuration for Auth (User Token & Data)
@@ -26,6 +27,7 @@ export const store = configureStore({
   reducer: {
     [authApi.reducerPath]: authApi.reducer,
     auth: persistedAuthReducer,
+    socket: socketReducer,
     [userApi.reducerPath]: userApi.reducer,
     [contactsApi.reducerPath]: contactsApi.reducer,
     [chatApi.reducerPath]: chatApi.reducer,

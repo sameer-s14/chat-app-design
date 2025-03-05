@@ -12,11 +12,21 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Avatar from "../components/Avatar";
 import SearchingHeader from "../components/SearchingHeader";
 import UserContacts from "../components/UserContact";
+import { useCreateOneToOneChatMutation } from "../api";
 
 
 const NewChatOptionList = ({ navigation }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  
+  const [createGroupChat] = useCreateOneToOneChatMutation();
+
+  async function savedContactHandler(userId) {
+    try{
+      const data = await createGroupChat(userId).unwrap();
+      navigation.navigate('Home')
+    }catch(err){
+      console.log(">>>>>>>>>>>>>",err)
+    }
+  }
   return (
     <SafeAreaView style={styles.container}>
       <SearchingHeader searchTerm={searchTerm} setSearchTerm={setSearchTerm} backHandler={() => navigation.goBack()} />
@@ -42,7 +52,7 @@ const NewChatOptionList = ({ navigation }) => {
         </>
       )}
 
-      <UserContacts search={searchTerm} mobileContactHeading={"Invite Users"} savedContactHeading={"Saved Contacts"} />
+      <UserContacts search={searchTerm} mobileContactHeading={"Invite Users"} savedContactHeading={"Saved Contacts"} savedContactHandler={savedContactHandler} />
     </SafeAreaView>
   );
 };

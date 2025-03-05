@@ -5,10 +5,10 @@ import { fetchUserContacts } from "../utils";
 import { FontAwesome6 } from "@expo/vector-icons";
 import { COLORS } from "../constants";
 
-const UserContacts = ({ search, savedContactHeading, mobileContactHeading, searchType = "name" }: any) => {
+const UserContacts = ({ search, savedContactHeading, mobileContactHeading, searchType = "name", savedContactHandler }: any) => {
     const [contacts, setContacts] = useState([]);
 
-    const { data,isLoading } = savedContactHeading ? useGetUserContactsQuery(undefined, {
+    const { data } = savedContactHeading ? useGetUserContactsQuery(undefined, {
         // skip: contacts.length > 0,
     }) : { data: { data: { contacts: [] } } };
     const savedContacts = data?.data || {};
@@ -31,9 +31,9 @@ const UserContacts = ({ search, savedContactHeading, mobileContactHeading, searc
         (!search || (
             searchType === "name"
                 ? contact?.name?.toLowerCase().includes(search.toLowerCase())
-                : contact?.phoneNumbers?.some((num) => num?.number?.replaceAll(' ','').includes(search))
+                : contact?.phoneNumbers?.some((num) => num?.number?.replaceAll(' ', '').includes(search))
         )) &&
-        !savedContacts?.contacts?.some(saved => saved.phoneNumber === saved?.phoneNumbers?.[0]?.number?.replaceAll(' ',''))
+        !savedContacts?.contacts?.some(saved => saved.phoneNumber === contact?.phoneNumbers?.[0]?.number?.replaceAll(' ', ''))
     );
 
     const sections = []
@@ -42,7 +42,12 @@ const UserContacts = ({ search, savedContactHeading, mobileContactHeading, searc
             title: savedContactHeading || '',
             data: filteredConversations || [],
             renderItem: ({ item }) => (
-                <TouchableOpacity style={styles.chatItem}>
+                <TouchableOpacity style={styles.chatItem} onPress={() => {
+                    console.log({ item })
+                    if (savedContactHandler) {
+                        return savedContactHandler(item?.id)
+                    }
+                }}>
                     {item?.profile ? <Image source={{ uri: item.profile }} style={styles.avatar} /> : <View style={[styles.avatar, styles.defaultAvatar]}>
                         <FontAwesome6 name="user-large" size={20} color={COLORS.WHITE} />
                     </View>}
@@ -62,27 +67,28 @@ const UserContacts = ({ search, savedContactHeading, mobileContactHeading, searc
             data: filteredContacts || [],
             renderItem: ({ item }) => {
                 return (
-                <TouchableOpacity style={styles.chatItem}>
-                    <View style={[styles.avatar, styles.defaultAvatar]}>
-                        <FontAwesome6 name="user-large" size={20} color={COLORS.WHITE} />
-                    </View>
-                    <View style={styles.chatDetails}>
-                        <View style={styles.chatHeader}>
-                            <Text style={styles.name}>{item.name}</Text>
-                            <TouchableOpacity style={{ paddingHorizontal: 10, paddingVertical: 5 }}>
-                                <Text style={{ fontSize: 12, color: COLORS.PRIMARY }}>Invite</Text>
-                            </TouchableOpacity>
+                    <TouchableOpacity style={styles.chatItem}>
+                        <View style={[styles.avatar, styles.defaultAvatar]}>
+                            <FontAwesome6 name="user-large" size={20} color={COLORS.WHITE} />
                         </View>
-                    </View>
-                </TouchableOpacity>
-            )},
+                        <View style={styles.chatDetails}>
+                            <View style={styles.chatHeader}>
+                                <Text style={styles.name}>{item.name}</Text>
+                                <TouchableOpacity style={{ paddingHorizontal: 10, paddingVertical: 5 }}>
+                                    <Text style={{ fontSize: 12, color: COLORS.PRIMARY }}>Invite</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                )
+            },
         })
     }
-
+    console?.log(sections?.length)
     return <SectionList
         sections={sections}
-        keyExtractor={(item, index) => item.id || index.toString()}
-        renderItem={({ section, item }) => section?.renderItem({ item })}
+        keyExtractor={(item, index) => item?._id || index.toString()}
+        renderItem={({ section, item }) => section && section?.renderItem({ item })}
         renderSectionHeader={({ section }) => section?.data?.length > 0 ? <Text style={styles.sectionHeader}>{section?.title || 'Users'}</Text> : null}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}

@@ -180,7 +180,7 @@ export default function ProfileScreen({ navigation }) {
           </View>
           <View style={styles.fieldTextContainer}>
             <Text style={styles.fieldTitle}>Phone</Text>
-            <Text style={styles.fieldValue}>{user?.countryCode || '' + ' ' + user?.phone}</Text>
+            <Text style={styles.fieldValue}>{user?.countryCode || '' + ' ' }{user?.phone}</Text>
           </View>
         </View>
       </View>
