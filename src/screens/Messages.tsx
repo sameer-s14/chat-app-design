@@ -6,6 +6,9 @@ import { COLORS, SOCKET_EVENTS } from "../constants";
 import Avatar from "../components/Avatar";
 import { ms, ws } from "../utils";
 import { useSelector } from "react-redux";
+import { useGetChatDetailsQuery, useGetMessagesQuery } from "../api";
+import { ISendMessage } from "../interface";
+import { Modal } from "react-native";
 
 const initialMessages = [
     { id: "1", type: "message", sender: "John", text: "Hello everyone!" },
@@ -15,42 +18,68 @@ const initialMessages = [
     { id: "5", type: "event", text: "John left the group." },
 ];
 
-const MessageItem = ({ item }) => {
+const MessageItem = ({ item, loggedUserId }) => {
     if (item.type === "event") {
         return <Text style={styles.eventText}>{item.text}</Text>;
     }
 
+    const isSender = item?.sender?._id === loggedUserId;
     return (
-        <View style={[styles.messageRow, item.sender === "You" ? styles.rightMessageRow : styles.leftMessageRow]}>
-            {item.sender !== "You" && <Avatar size={30} iconSize={30} />}
-            <View style={item.sender === "You" ? styles.myMessage : styles.otherMessage}>
-                <Text style={[styles.messageText, item.sender === "You" ? { color: COLORS.WHITE } : { color: COLORS.BLACK }]}>{item.text}</Text>
+        <View style={[styles.messageRow, isSender ? styles.rightMessageRow : styles.leftMessageRow]}>
+            {!isSender && <Avatar size={30} iconSize={30} />}
+            <View style={isSender ? styles.myMessage : styles.otherMessage}>
+                <Text style={[styles.messageText, isSender ? { color: COLORS.WHITE } : { color: COLORS.BLACK }]}>{item?.message}</Text>
             </View>
         </View>
     );
 };
 
 export default function ChatScreen({ navigation, route }) {
-    const [messages, setMessages] = useState(initialMessages);
+    const [messages, setMessages] = useState([]);
     const [message, setMessage] = useState("");
-    const socket = useSelector((state) => state.socket);
+    const { socket } = useSelector((state) => state?.socket);
     const { user } = useSelector((state) => state?.auth);
-    const chatData = route?.params
+    const chatId = route?.params?.chatId;
+    const { data, error } = useGetChatDetailsQuery(chatId, { skip: !chatId });
+    const chatDetails = data?.data;
+    const { data: messagesData } = useGetMessagesQuery(chatId, { skip: !chatId });
+    const messageList = messagesData?.data || [];
+    const [menuVisible, setMenuVisible] = useState(false)
+
     const sendMessage = () => {
         if (message.trim().length > 0) {
-            setMessages((prevMessages) => [
-                { id: Date.now().toString(), type: "message", sender: "You", text: message },
-                ...prevMessages,
-            ]);
+            if (socket?.connected && chatId) {
+                const messageDataToEmit: ISendMessage = {
+                    chatId: chatId,
+                    message: message.trim(),
+                    senderId: user?.userId
+                }
+                socket.emit(SOCKET_EVENTS.SEND_MESSAGE, messageDataToEmit)
+            }
             setMessage("");
         }
     };
 
     useEffect(() => {
-        if (socket?.connected && chatData?.chatId) {
-            socket.emit(SOCKET_EVENTS.JOIN_CHAT, { userId: user?.userId, chatId: chatData?.chatId })
+        if (socket?.connected && chatId) {
+            socket.emit(SOCKET_EVENTS.JOIN_CHAT, { userId: user?.userId, chatId: chatId });
+
+            const handleNewMessage = (data) => {
+                setMessages((prevMessages) => [data, ...prevMessages]);
+            };
+
+            socket?.on(SOCKET_EVENTS.RECEIVE_MESSAGE, handleNewMessage)
+            return () => {
+                socket.off(SOCKET_EVENTS.RECEIVE_MESSAGE, handleNewMessage);
+            };
         }
-    }, [socket])
+    }, [socket, chatId]);
+
+    useEffect(() => {
+        if (messagesData?.data) {
+            setMessages(messagesData.data);
+        }
+    }, [messagesData]);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -59,20 +88,51 @@ export default function ChatScreen({ navigation, route }) {
                 <TouchableOpacity style={{ marginHorizontal: 10 }} onPress={() => navigation.goBack()}>
                     <Ionicons name="arrow-back" size={24} color={COLORS.BLACK} />
                 </TouchableOpacity>
-                {
-                    chatData?.image ? <Image source={{ uri: chatData?.image }} style={styles.avatar} /> :
-                        <View style={[styles.avatar, styles.defaultAvatar]}>
-                            <FontAwesome6 name="user-large" size={15} colo6FontAwesome6={COLORS.WHITE} />
+                <TouchableOpacity style={{ flex: 1, flexDirection: 'row' }} onPress={() => navigation.navigate('ChatInfo', { chatId })}>
+                    {
+                        chatDetails?.image ? <Image source={{ uri: chatDetails?.image }} style={styles.avatar} /> :
+                            <View style={[styles.avatar, styles.defaultAvatar]}>
+                                <FontAwesome6 name="user-large" size={15} color={COLORS.WHITE} />
+                            </View>
+                    }
+                    <Text style={styles.headerText}>{chatDetails?.name}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuButton} onPress={() => setMenuVisible(true)}>
+                    <Ionicons name="ellipsis-vertical" size={24} color={COLORS.BLACK} />
+                </TouchableOpacity>
+
+                {/* Modal for Options */}
+                <Modal
+                    transparent
+                    animationType="fade"
+                    visible={menuVisible}
+                    onRequestClose={() => setMenuVisible(false)}
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setMenuVisible(false)}
+                    >
+                        <View style={styles.menu}>
+                            <TouchableOpacity style={styles.menuItem} onPress={() => alert("View Profile")}>
+                                <Text style={styles.menuText}>View Profile</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.menuItem} onPress={() => alert("Clear Chat")}>
+                                <Text style={styles.menuText}>Clear Chat</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.menuItem} onPress={() => alert("Exit Chat")}>
+                                <Text style={styles.menuText}>Exit Chat</Text>
+                            </TouchableOpacity>
                         </View>
-                }
-                <Text style={styles.headerText}>{chatData?.name}</Text>
+                    </TouchableOpacity>
+                </Modal>
             </View>
 
             {/* MESSAGES LIST */}
             <FlatList
-                data={messages}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => <MessageItem item={item} />}
+                data={messages || []}
+                keyExtractor={(item, index) => index?.toString()}
+                renderItem={({ item }) => <MessageItem item={item} loggedUserId={user?.userId} />}
                 contentContainerStyle={styles.messageList}
                 inverted
             />
@@ -101,7 +161,8 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: "row",
         alignItems: "center",
-        padding: 15,
+        paddingHorizontal: 15,
+        paddingVertical: 5,
         // backgroundColor: COLORS.WHITE,
         borderBottomWidth: 1,
         borderColor: "#ddd",
@@ -193,6 +254,34 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 3,
         elevation: 3,
-    }
+    },
+    menuButton: {
+        padding: 10,
+        marginStart: 'auto'
+    },
+    modalOverlay: {
+        flex: 1,
+        // justifyContent: "center",
+        alignItems: "flex-end",
+        backgroundColor: "rgba(0, 0, 0, 0.02)",
+        paddingRight: 5,
+        paddingTop: 50,
+    },
+    menu: {
+        backgroundColor: COLORS.WHITE,
+        borderRadius: 10,
+        marginTop: 10,
+        paddingVertical: 5,
+        width: "60%",
+        elevation: 5,
+    },
+    menuItem: {
+        paddingVertical: 15,
+        paddingHorizontal: 15,
+    },
+    menuText: {
+        fontSize: 16,
+        color: COLORS.BLACK,
+    },
 });
 

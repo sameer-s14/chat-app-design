@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
 import authReducer from "./authSlice";
 import socketReducer from "./socketSlice";
-import { authApi, chatApi, contactApi, contactsApi, userApi } from "../api";
+import { authApi, chatApi, contactApi, contactsApi, messagesApi, userApi } from "../api";
 
 // Persist Configuration for Auth (User Token & Data)
 const authPersistConfig = {
@@ -31,6 +31,7 @@ export const store = configureStore({
     [userApi.reducerPath]: userApi.reducer,
     [contactsApi.reducerPath]: contactsApi.reducer,
     [chatApi.reducerPath]: chatApi.reducer,
+    [messagesApi.reducerPath]: messagesApi.reducer,
 
   },
   middleware: (getDefaultMiddleware) =>
@@ -38,7 +39,8 @@ export const store = configureStore({
       authApi.middleware,
       userApi.middleware,
       contactsApi.middleware,
-      chatApi.middleware
+      chatApi.middleware,
+      messagesApi.middleware
     ]),
 });
 

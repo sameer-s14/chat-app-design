@@ -33,16 +33,25 @@ export const chatApi = createApi({
         getAllChats: builder.query({
             query: (params) => ({
                 url: "chats/all",
-                params, 
+                params,
             }),
             providesTags: ["Chats"],
             keepUnusedDataFor: 10,
         }),
+        getChatDetails: builder.query({
+            query: (chatId) => ({
+                url: `chats/details/${chatId}`,
+            }),
+            providesTags: ["Chats"],
+            keepUnusedDataFor: 10,
+        }),
+
     }),
 });
 
 export const {
     useCreateGroupChatMutation,
     useCreateOneToOneChatMutation,
-    useGetAllChatsQuery
+    useGetAllChatsQuery,
+    useGetChatDetailsQuery
 } = chatApi;

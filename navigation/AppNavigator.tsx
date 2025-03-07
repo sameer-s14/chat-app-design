@@ -14,6 +14,7 @@ import NameInputScreen from '@/src/screens/NameInputScreen';
 import CreateContact from '@/src/screens/CreateContact';
 import ProfileInputScreen from '@/src/screens/ProfileInputScreen';
 import AboutScreen from '@/src/screens/About';
+import ChatInfo from '@/src/screens/ChatInfo';
 
 // Define types for your navigation
 export type RootStackParamList = {
@@ -94,7 +95,8 @@ export default function AppNavigator() {
         <Stack.Screen
           name="About"
           component={AboutScreen}
-          options={{ headerShown: false,
+          options={{
+            headerShown: false,
             gestureDirection: "horizontal",
             transitionSpec: {
               open: { animation: "timing", config: { duration: 200 } },
@@ -113,6 +115,11 @@ export default function AppNavigator() {
               },
             }),
           }}
+        />
+        <Stack.Screen
+          name="ChatInfo"
+          component={ChatInfo}
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>
