@@ -8,5 +8,6 @@ export enum COLORS {
     SUCCESS = "#00C136",
     RED = "red",
     DARK_SLATE_GRAY = "#2F4F4F",
-    SOFT_GRAY = "#F3F4F6"
+    SOFT_GRAY = "#F3F4F6",
+    PURE_WHITE = '#fff'
 }

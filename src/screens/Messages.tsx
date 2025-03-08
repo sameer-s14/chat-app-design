@@ -26,7 +26,7 @@ const MessageItem = ({ item, loggedUserId }) => {
     const isSender = item?.sender?._id === loggedUserId;
     return (
         <View style={[styles.messageRow, isSender ? styles.rightMessageRow : styles.leftMessageRow]}>
-            {!isSender && <Avatar size={30} iconSize={30} />}
+            {!isSender && <Avatar imageUrl={item?.sender?.profile} size={30} iconSize={30} />}
             <View style={isSender ? styles.myMessage : styles.otherMessage}>
                 <Text style={[styles.messageText, isSender ? { color: COLORS.WHITE } : { color: COLORS.BLACK }]}>{item?.message}</Text>
             </View>
@@ -43,7 +43,6 @@ export default function ChatScreen({ navigation, route }) {
     const { data, error } = useGetChatDetailsQuery(chatId, { skip: !chatId });
     const chatDetails = data?.data;
     const { data: messagesData } = useGetMessagesQuery(chatId, { skip: !chatId });
-    const messageList = messagesData?.data || [];
     const [menuVisible, setMenuVisible] = useState(false)
 
     const sendMessage = () => {

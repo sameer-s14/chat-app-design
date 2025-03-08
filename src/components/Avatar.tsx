@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from '../constants';
 import { ms } from "../utils";
 
-const Avatar = ({ imageUrl, icon = "person", size = 45, backgroundColor = COLORS.PRIMARY, iconColor = COLORS.WHITE, iconSize = 45 }) => {
+const Avatar = ({ imageUrl, icon = "person", size = 45, backgroundColor = COLORS.DARK_SLATE_GRAY, iconColor = COLORS.WHITE, iconSize = 45 }) => {
     const [imageError, setImageError] = useState(false);
 
     return (

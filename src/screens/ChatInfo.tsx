@@ -1,9 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, Image, FlatList, TouchableOpacity, ScrollView, StyleSheet, Alert, TextInput } from "react-native";
-import { Ionicons, FontAwesome, MaterialIcons, AntDesign } from "@expo/vector-icons";
+import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { Ionicons, FontAwesome, MaterialIcons, AntDesign, MaterialCommunityIcons, Feather, FontAwesome6 } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useGetChatDetailsQuery } from "../api";
 import { COLORS } from "../constants";
+import TabItem from "../components/TabItem";
+import { ms } from "../utils";
+
 const groupData = {
     name: "MERN Stack Devs",
     image: null, // Use null for default icon
@@ -64,7 +67,35 @@ export default function ChatInfo({ navigation, route }) {
                                     </View>
                                 )}
                                 <Text style={styles.groupName}>{chatDetails?.name}</Text>
-                                {chatDetails?.isGroup && <Text style={styles.memberCount}>{chatDetails.users.length} members</Text>}
+                                {chatDetails?.isGroup && <Text style={styles.memberCount}>{chatDetails?.users?.length} members</Text>}
+                            </View>
+
+                            <View style={styles.rowContainer}>
+                                <TabItem
+                                    boxSize={70}
+                                    Icon={<MaterialCommunityIcons name="phone-outline" size={24} color={COLORS.PRIMARY} />}
+                                    heading="Audio"
+                                    onPress={() => console.log("Home Pressed")}
+                                />
+                                <TabItem
+                                    boxSize={70}
+                                    Icon={<MaterialCommunityIcons name="video-outline" size={24} color={COLORS.PRIMARY} />}
+                                    heading="Video"
+                                    onPress={() => console.log("Home Pressed")}
+                                />
+                                {chatDetails?.isGroup &&
+                                    <TabItem
+                                        boxSize={70}
+                                        Icon={<Feather name="user-plus" size={24} color={COLORS.PRIMARY} />}
+                                        heading="Add"
+                                        onPress={() => console.log("Home Pressed")}
+                                    />}
+                                <TabItem
+                                    boxSize={70}
+                                    Icon={<Ionicons name="search" size={20} color={COLORS.PRIMARY} />}
+                                    heading="Search"
+                                    onPress={() => console.log("Home Pressed")}
+                                />
                             </View>
 
                             {/* MEDIA, LINKS & DOCS */}
@@ -80,9 +111,9 @@ export default function ChatInfo({ navigation, route }) {
 
                             {/* MEMBERS LIST */}
                             {chatDetails?.isGroup && <View style={styles.membersHeader}>
-                                <Text style={styles.sectionTitle}>{chatDetails?.users.length} Members</Text>
+                                <Text style={styles.sectionTitle}>{chatDetails?.users?.length} Members</Text>
                                 <TouchableOpacity onPress={() => handleOptionPress("Search")} style={styles.searchIcon}>
-                                    <Ionicons name="search" size={20} color="black" />
+                                    <Ionicons name="search" size={16} color="black" />
                                 </TouchableOpacity>
                             </View>}
                         </>
@@ -91,14 +122,57 @@ export default function ChatInfo({ navigation, route }) {
                     data={chatDetails?.isGroup ? (showAllMembers ? chatDetails?.users : chatDetails?.users?.slice(0, 10)) : []}
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => (
-                        <View style={styles.memberRow}>
-                            <FontAwesome name="user-circle" size={35} color="gray" />
-                            <Text style={styles.memberName}>{item.name}</Text>
-                        </View>
+                        <TouchableOpacity
+                            style={{
+                                flexDirection: "row",
+                                paddingVertical: 15,
+                            }}
+                            onPress={() => navigation.navigate("MessagesList", { chatId: item?._id, name: item?.name, image: item?.profile })}
+                        >
+                            {
+                                item?.profile ? <Image source={{ uri: item?.profile }} style={styles.avatar} /> :
+                                    <View style={[styles.avatar, {
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        backgroundColor: "#B0BEC5"
+                                    }]}>
+                                        <FontAwesome6 name="user-large" size={20} color={COLORS.WHITE} />
+                                    </View>
+                            }
+
+                            <View style={{
+                                flex: 1,
+                                justifyContent: "center"
+                            }}>
+                                <View style={{
+                                    flexDirection: "row",
+                                    justifyContent: "space-between"
+                                }}>
+                                    <Text style={{
+                                        fontWeight: "bold",
+                                        fontSize: 16,
+                                    }}>{item?.name}</Text>
+                                </View>
+                                <View style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    marginTop: 4
+                                }}>
+                                    {item?.bio && <Text style={{
+                                        fontSize: 14,
+                                        color: "gray",
+                                        flex: 1,
+                                    }} numberOfLines={1}>
+                                        {item?.bio}
+                                    </Text>}
+
+                                </View>
+                            </View>
+                        </TouchableOpacity>
                     )}
                     ListFooterComponent={() => {
                         return <>
-                            {!showAllMembers && chatDetails?.users.length > 10 && (
+                            {!showAllMembers && chatDetails?.users?.length > 10 && (
                                 <TouchableOpacity onPress={() => setShowAllMembers(true)} style={styles.viewAllButton}>
                                     <Text style={styles.viewAllText}>View All</Text>
                                 </TouchableOpacity>
@@ -115,7 +189,7 @@ export default function ChatInfo({ navigation, route }) {
                                 <Text style={[styles.actionText, { color: "red" }]}>Exit Group</Text>
                             </TouchableOpacity>}
 
-                            {!chatDetails?.isGruoup && <TouchableOpacity style={[styles.actionButton, styles.exitButton]} onPress={() => handleOptionPress("Report User")}>
+                            {!chatDetails?.isGroup && <TouchableOpacity style={[styles.actionButton, styles.exitButton]} onPress={() => handleOptionPress("Report User")}>
                                 <MaterialIcons name="do-disturb-alt" size={24} color="red" />
                                 <Text style={[styles.actionText, { color: "red" }]}>Block {chatDetails?.name}</Text>
                             </TouchableOpacity>}
@@ -138,20 +212,31 @@ export default function ChatInfo({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#fff", paddingHorizontal: 15 },
+    container: { flex: 1, backgroundColor: COLORS.PURE_WHITE, paddingHorizontal: 15 },
     header: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 15 },
+    rowContainer: {
+        flexDirection: "row",
+        justifyContent: "space-around",
+        padding: 10,
+    },
+    avatar: {
+        width: ms(50),
+        height: ms(50),
+        borderRadius: 25,
+        marginRight: 10,
+    },
     groupInfo: { alignItems: "center", marginVertical: 15 },
-    groupImage: { width: 90, height: 90, borderRadius: 45 },
-    defaultAvatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: "#B0BEC5", justifyContent: "center", alignItems: "center" },
+    groupImage: { width: 170, height: 170, borderRadius: 85 },
+    defaultAvatar: { width: 170, height: 170, borderRadius: 85, backgroundColor: "#B0BEC5", justifyContent: "center", alignItems: "center" },
     groupName: { fontSize: 22, fontWeight: "bold", marginTop: 10 },
     memberCount: { fontSize: 14, color: "gray" },
 
-    sectionTitle: { fontSize: 16, fontWeight: "bold", marginTop: 20 },
+    sectionTitle: { fontSize: 14, color: COLORS.DARK_SLATE_GRAY, marginTop: 20 },
     mediaScroll: { flexDirection: "row", marginVertical: 10 },
     mediaItem: { alignItems: "center", marginRight: 20 },
     mediaText: { fontSize: 14, marginTop: 5 },
 
-    membersHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    membersHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 5, },
     searchIcon: { padding: 5 },
 
     memberRow: { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 0.5, borderColor: "#ddd" },
