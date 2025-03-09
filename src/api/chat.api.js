@@ -13,7 +13,7 @@ export const chatApi = createApi({
             return headers;
         },
     }),
-    tagTypes: ["Chats"],  // Define tag for caching
+    tagTypes: ["Chats", "ChatDetails"],  // Define tag for caching
     endpoints: (builder) => ({
         createGroupChat: builder.mutation({
             query: (body) => ({
@@ -30,6 +30,58 @@ export const chatApi = createApi({
             }),
             invalidatesTags: ["Chats"],
         }),
+        addMembers: builder.mutation({
+            query: ({ chatId, body }) => {
+                return ({
+                    url: `chats/add-participants/${chatId}`,
+                    method: "POST",
+                    body
+                })
+            },
+            invalidatesTags: (result, error, { chatId }) => [
+                "Chats",
+                { type: "ChatDetails", id: chatId },
+            ],
+        }),
+        removeMembers: builder.mutation({
+            query: ({ chatId, body }) => {
+                return ({
+                    url: `chats/remove-participants/${chatId}`,
+                    method: "POST",
+                    body
+                })
+            },
+            invalidatesTags: (result, error, { chatId }) => [
+                "Chats",
+                { type: "ChatDetails", id: chatId },
+            ],
+        }),
+        addAdmin: builder.mutation({
+            query: ({ chatId, body }) => {
+                return ({
+                    url: `chats/add-admin/${chatId}`,
+                    method: "POST",
+                    body
+                })
+            },
+            invalidatesTags: (result, error, { chatId }) => [
+                "Chats",
+                { type: "ChatDetails", id: chatId },
+            ],
+        }),
+        removeAdmin: builder.mutation({
+            query: ({ chatId, body }) => {
+                return ({
+                    url: `chats/remove-admin/${chatId}`,
+                    method: "POST",
+                    body
+                })
+            },
+            invalidatesTags: (result, error, { chatId }) => [
+                "Chats",
+                { type: "ChatDetails", id: chatId },
+            ],
+        }),
         getAllChats: builder.query({
             query: (params) => ({
                 url: "chats/all",
@@ -42,7 +94,7 @@ export const chatApi = createApi({
             query: (chatId) => ({
                 url: `chats/details/${chatId}`,
             }),
-            providesTags: ["Chats"],
+            providesTags: (result, error, chatId) => [{ type: "ChatDetails", id: chatId }],
             keepUnusedDataFor: 10,
         }),
 
@@ -52,6 +104,10 @@ export const chatApi = createApi({
 export const {
     useCreateGroupChatMutation,
     useCreateOneToOneChatMutation,
+    useRemoveMembersMutation,
+    useAddMembersMutation,
     useGetAllChatsQuery,
-    useGetChatDetailsQuery
+    useGetChatDetailsQuery,
+    useAddAdminMutation,
+    useRemoveAdminMutation
 } = chatApi;

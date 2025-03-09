@@ -5,22 +5,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, SOCKET_EVENTS } from "../constants";
 import Avatar from "../components/Avatar";
 import { ms, ws } from "../utils";
-import { useSelector } from "react-redux";
-import { useGetChatDetailsQuery, useGetMessagesQuery } from "../api";
+import { useDispatch, useSelector } from "react-redux";
+import { messagesApi, useGetChatDetailsQuery, useGetMessagesQuery } from "../api";
 import { ISendMessage } from "../interface";
 import { Modal } from "react-native";
 
-const initialMessages = [
-    { id: "1", type: "message", sender: "John", text: "Hello everyone!" },
-    { id: "2", type: "message", sender: "Alice", text: "It's almost done! Just finalizing the UI.It's almost done! Just finalizing the UI.It's almost done! Just finalizing the UI.It's almost done! Just finalizing the UI." },
-    { id: "3", type: "message", sender: "You", text: "How's the project going?" },
-    { id: "4", type: "event", text: "Alice joined the group." },
-    { id: "5", type: "event", text: "John left the group." },
-];
-
 const MessageItem = ({ item, loggedUserId }) => {
     if (item.type === "event") {
-        return <Text style={styles.eventText}>{item.text}</Text>;
+        return <Text style={styles.eventText}>{item?.message}</Text>;
     }
 
     const isSender = item?.sender?._id === loggedUserId;
@@ -58,13 +50,19 @@ export default function ChatScreen({ navigation, route }) {
             setMessage("");
         }
     };
+    const dispatch = useDispatch();
 
     useEffect(() => {
         if (socket?.connected && chatId) {
             socket.emit(SOCKET_EVENTS.JOIN_CHAT, { userId: user?.userId, chatId: chatId });
 
             const handleNewMessage = (data) => {
-                setMessages((prevMessages) => [data, ...prevMessages]);
+                setMessages((prevMessages) => [...prevMessages, data]);
+                dispatch(
+                    messagesApi?.util?.updateQueryData("getMessages", chatId, (draft) => {
+                        draft?.data?.push(data);
+                    }) as any
+                );
             };
 
             socket?.on(SOCKET_EVENTS.RECEIVE_MESSAGE, handleNewMessage)
@@ -76,7 +74,8 @@ export default function ChatScreen({ navigation, route }) {
 
     useEffect(() => {
         if (messagesData?.data) {
-            setMessages(messagesData.data);
+            // console.log('>>>>>',chatId,messagesData?.data)
+            setMessages([...messagesData.data].reverse());
         }
     }, [messagesData]);
 

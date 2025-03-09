@@ -15,6 +15,7 @@ import CreateContact from '@/src/screens/CreateContact';
 import ProfileInputScreen from '@/src/screens/ProfileInputScreen';
 import AboutScreen from '@/src/screens/About';
 import ChatInfo from '@/src/screens/ChatInfo';
+import AddMembers from '@/src/screens/AddMembers';
 
 // Define types for your navigation
 export type RootStackParamList = {
@@ -121,6 +122,12 @@ export default function AppNavigator() {
           component={ChatInfo}
           options={{ headerShown: false }}
         />
+          <Stack.Screen
+          name="AddMembers"
+          component={AddMembers}
+          options={{ headerShown: false }}
+        />
+        
       </Stack.Navigator>
     </NavigationContainer>
   );

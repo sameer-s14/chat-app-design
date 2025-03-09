@@ -31,33 +31,6 @@ interface Conversation {
   unreadCount: number;
 }
 
-const MOCK_CONVERSATIONS: Conversation[] = [
-  {
-    _id: "1",
-    name: "Alice Johnson",
-    image: "https://i.pravatar.cc/150?img=1",
-    lastMessage: "Hey, how are you doing?",
-    lastMessageTime: "2:30 PM",
-    unreadCount: 2,
-  },
-  {
-    _id: "2",
-    name: "Bob Smith",
-    image: "https://i.pravatar.cc/150?img=2",
-    lastMessage: "Meeting at 4 PM",
-    lastMessageTime: "1:45 PM",
-    unreadCount: 1,
-  },
-  {
-    _id: "3",
-    name: "Charlie Brown",
-    image: "https://i.pravatar.cc/150?img=3",
-    lastMessage: "Sounds good!",
-    lastMessageTime: "Yesterday",
-    unreadCount: 0,
-  },
-];
-
 const MENU_OPTIONS = [
   {
     label: "Profile",
@@ -116,7 +89,6 @@ const Home: React.FC = ({ navigation }) => {
   );
 
   const renderItem = ({ item, index }: { item: Conversation }) => {
-    const mock = MOCK_CONVERSATIONS[index];
     return (
       <TouchableOpacity
         style={styles.chatItem}
@@ -132,15 +104,15 @@ const Home: React.FC = ({ navigation }) => {
         <View style={styles.chatDetails}>
           <View style={styles.chatHeader}>
             <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.time}>{mock?.lastMessageTime}</Text>
+            {item?.latestMessage?.createdAt && <Text style={styles.time}>{new Date(item?.latestMessage?.createdAt).toLocaleTimeString('en', { timeStyle: "short" })}</Text>}
           </View>
           <View style={styles.messageContainer}>
-            <Text style={styles.lastMessage} numberOfLines={1}>
-              {mock?.lastMessage}
-            </Text>
-            {mock?.unreadCount > 0 && (
+            {item?.latestMessage?.message && <Text style={styles.lastMessage} numberOfLines={1}>
+              {item?.latestMessage?.message}
+            </Text>}
+            {index > 0 && (
               <View style={styles.unreadBadge}>
-                <Text style={styles.unreadText}>{mock?.unreadCount}</Text>
+                <Text style={styles.unreadText}>{index}</Text>
               </View>
             )}
           </View>
@@ -326,7 +298,7 @@ const styles = StyleSheet.create({
     height: 24,
     justifyContent: "center",
     alignItems: "center",
-    marginLeft: 8,
+    marginLeft: "auto",
   },
   unreadText: {
     color: "white",

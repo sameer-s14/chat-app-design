@@ -17,14 +17,14 @@ import { useCreateOneToOneChatMutation } from "../api";
 
 const NewChatOptionList = ({ navigation }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [createGroupChat] = useCreateOneToOneChatMutation();
+  const [createOneToOneChat] = useCreateOneToOneChatMutation();
 
   async function savedContactHandler(userId) {
-    try{
-      const data = await createGroupChat(userId).unwrap();
-      navigation.navigate('Home')
-    }catch(err){
-      console.log(">>>>>>>>>>>>>",err)
+    try {
+      const { data } = await createOneToOneChat(userId).unwrap();
+      console.log(data)
+      navigation.navigate("MessagesList", { chatId: data?.chatId, })
+    } catch (err) {
     }
   }
   return (

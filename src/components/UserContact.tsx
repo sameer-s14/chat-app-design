@@ -84,7 +84,7 @@ const UserContacts = ({ search, savedContactHeading, mobileContactHeading, searc
             },
         })
     }
-    console?.log(sections?.length)
+
     return <SectionList
         sections={sections}
         keyExtractor={(item, index) => item?._id || index.toString()}

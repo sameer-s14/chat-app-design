@@ -61,15 +61,25 @@ const CreateGroup = ({ navigation, route }) => {
                     type: groupImage.mimeType || "image/jpeg",
                 } as any);
             }
-            Object.keys(selectedContacts)?.forEach((userId) => formData.append('users', userId));
-            const { error } = await createGroupChat(formData);
-            if(!error){
-                navigation.navigate('Home')
+            const usersArray = Object.keys(selectedContacts);
+
+            if (usersArray.length === 1) {
+                formData.append('users[]', usersArray[0]);
+            } else if (usersArray.length > 1) {
+                usersArray.forEach(userId => formData.append('users[]', userId));
+            }
+            const { error, data } = await createGroupChat(formData);
+            console.log(">>>>>>>>>>>.", error, formData, data)
+            if (!error) {
+                console.log(">ASDASDa", data)
+                navigation.navigate("MessagesList", { chatId: data?.data?.chatId, })
             }
         } catch (err) {
             console.log(">>>>>>>>>..", err)
         }
     }
+
+    const disableSubmit = !groupName || !selectedUsersList?.length;
     return (
         <SafeAreaView style={styles.container}>
             <Header backHandler={() => navigation.goBack()} borderBottomWidth={0} heading="New group" />
@@ -119,7 +129,8 @@ const CreateGroup = ({ navigation, route }) => {
                 )}
             </View>
             <TouchableOpacity
-                style={styles.fabButton}
+                style={[styles.fabButton, disableSubmit && { backgroundColor: COLORS.LIGHT_GRAY }]}
+                disabled={disableSubmit}
                 onPress={handleSubmit}>
                 <Ionicons name="checkmark" size={20} color={COLORS.WHITE} />
             </TouchableOpacity>

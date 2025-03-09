@@ -15,18 +15,6 @@ import { hs, ms, ws } from "../utils";
 import SearchingHeader from "../components/SearchingHeader";
 import { useGetUserContactsQuery } from "../api";
 
-const MOCK_CONVERSATIONS = [
-  { id: "1", name: "Alice Johnson", avatar: "https://i.pravatar.cc/150?img=1" },
-  { id: "2", name: "Bob Smith", avatar: "https://i.pravatar.cc/150?img=2" },
-  { id: "3", name: "Charlie Brown", avatar: "https://i.pravatar.cc/150?img=3" },
-  { id: "4", name: "Alice Johnson", avatar: "https://i.pravatar.cc/150?img=4" },
-  { id: "5", name: "Bob Smith", avatar: "https://i.pravatar.cc/150?img=5" },
-  { id: "6", name: "Charlie Brown", avatar: "https://i.pravatar.cc/150?img=6" },
-  { id: "7", name: "Alice Johnson", avatar: "https://i.pravatar.cc/150?img=7" },
-  { id: "8", name: "Bob Smith", avatar: "https://i.pravatar.cc/150?img=8" },
-  { id: "9", name: "Charlie Brown", avatar: "https://i.pravatar.cc/150?img=9" },
-];
-
 const NewGroup = ({ navigation }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContacts, setSelectedContacts] = useState({});
@@ -81,6 +69,7 @@ const NewGroup = ({ navigation }) => {
     );
   };
 
+  const isContactSelected = Object.keys(selectedContacts)?.length > 0;
   return (
     <SafeAreaView style={styles.container}>
       <SearchingHeader searchTerm={searchTerm} setSearchTerm={setSearchTerm} backHandler={() => navigation.goBack()} heading="New group" />
@@ -123,7 +112,8 @@ const NewGroup = ({ navigation }) => {
       />
 
       <TouchableOpacity
-        style={styles.fabButton}
+        style={[styles.fabButton, !isContactSelected && { backgroundColor: COLORS.DARK_SLATE_GRAY, opacity: 0.7 }]}
+        disabled={!isContactSelected}
         onPress={() => navigation.navigate("CreateGroup", { selectedContacts })}
 
       >
