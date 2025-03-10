@@ -3,3 +3,4 @@ export * from './user.api';
 export * from './contact.api';
 export * from './chat.api';
 export * from './messages.api';
+export * from './upload.api';
