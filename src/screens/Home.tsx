@@ -9,8 +9,6 @@ import {
   StyleSheet,
   Animated,
   TouchableWithoutFeedback,
-  Modal,
-  StatusBar,
 } from "react-native";
 import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../constants";
@@ -26,8 +24,7 @@ interface Conversation {
   _id: string;
   name: string;
   image: string;
-  lastMessage: string;
-  lastMessageTime: string;
+  latestMessage: any;
   unreadCount: number;
 }
 
@@ -88,7 +85,7 @@ const Home: React.FC = ({ navigation }) => {
     conv.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const renderItem = ({ item, index }: { item: Conversation }) => {
+  const renderItem = ({ item }: { item: Conversation }) => {
     return (
       <TouchableOpacity
         style={styles.chatItem}
@@ -107,12 +104,12 @@ const Home: React.FC = ({ navigation }) => {
             {item?.latestMessage?.createdAt && <Text style={styles.time}>{new Date(item?.latestMessage?.createdAt).toLocaleTimeString('en', { timeStyle: "short" })}</Text>}
           </View>
           <View style={styles.messageContainer}>
-            {item?.latestMessage?.message && <Text style={styles.lastMessage} numberOfLines={1}>
-              {item?.latestMessage?.message}
-            </Text>}
-            {index > 0 && (
+            <Text style={styles.lastMessage} numberOfLines={1}>
+              {item?.latestMessage?.message || item?.latestMessage?.type || ''}
+            </Text>
+            {item?.unreadCount > 0 && (
               <View style={styles.unreadBadge}>
-                <Text style={styles.unreadText}>{index}</Text>
+                <Text style={styles.unreadText}>{item?.unreadCount}</Text>
               </View>
             )}
           </View>

@@ -1,3 +1,5 @@
+import { Platform } from "react-native";
+
 export const uriToBlob = async (uri) => {
     try {
         const response = await fetch(uri);
@@ -28,3 +30,7 @@ export const getIconColor = (type: string) => {
             return 'gray'; // Default color
     }
 };
+
+export const getAdjustedUri = (image) => {
+    return Platform.OS === 'android' ? image?.uri : image?.uri.replace('file://', '');
+}

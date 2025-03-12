@@ -1,13 +1,18 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import * as tus from 'tus-js-client';
-// import { BASE_URL } from '../config';
+import { BASE_URL } from '../config';
 import { updateUploadProgress } from '../redux/uploadSlice';
-
-const BASE_URL = 'http://192.168.233.102:4000'
 
 export const uploadApi = createApi({
     reducerPath: 'uploadApi',
     baseQuery: fetchBaseQuery({ baseUrl: BASE_URL }),
+    prepareHeaders: (headers, { getState }) => {
+        const token = getState()?.auth?.token;
+        if (token) {
+            headers.append("Authorization", `Bearer ${token}`);
+        }
+        return headers;
+    },
     endpoints: (builder) => ({
         uploadFile: builder.mutation({
             async queryFn(file, { dispatch, getState }) {

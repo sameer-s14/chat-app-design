@@ -19,7 +19,7 @@ import Feather from "@expo/vector-icons/Feather";
 import * as ImagePicker from "expo-image-picker";
 import Header from "../components/Header";
 import { useUpdateUserProfileMutation } from "../api";
-import { ms } from "../utils";
+import { getAdjustedUri, ms } from "../utils";
 import { COLORS } from "../constants";
 import { useDispatch, useSelector } from "react-redux";
 import { updateUserDetails } from "../redux/authSlice";
@@ -55,10 +55,9 @@ export default function ProfileScreen({ navigation }) {
     try {
       const formData = new FormData();
       if (image) {
-        const adjustedUri =
-          Platform.OS === 'android' ? image?.uri : image?.uri.replace('file://', '');
+
         formData.append("file", {
-          uri: adjustedUri,
+          uri: getAdjustedUri(image),
           name: image.name || "upload.jpg",
           type: image.mimeType || "image/jpeg",
         } as any);
@@ -180,7 +179,7 @@ export default function ProfileScreen({ navigation }) {
           </View>
           <View style={styles.fieldTextContainer}>
             <Text style={styles.fieldTitle}>Phone</Text>
-            <Text style={styles.fieldValue}>{user?.countryCode || '' + ' ' }{user?.phone}</Text>
+            <Text style={styles.fieldValue}>{user?.countryCode || '' + ' '}{user?.phone}</Text>
           </View>
         </View>
       </View>

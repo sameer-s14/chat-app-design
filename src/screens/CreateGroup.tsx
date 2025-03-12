@@ -69,9 +69,7 @@ const CreateGroup = ({ navigation, route }) => {
                 usersArray.forEach(userId => formData.append('users[]', userId));
             }
             const { error, data } = await createGroupChat(formData);
-            console.log(">>>>>>>>>>>.", error, formData, data)
             if (!error) {
-                console.log(">ASDASDa", data)
                 navigation.navigate("MessagesList", { chatId: data?.data?.chatId, })
             }
         } catch (err) {

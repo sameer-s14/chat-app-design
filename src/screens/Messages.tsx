@@ -30,23 +30,31 @@ const MessageItem = ({ item, loggedUserId }) => {
 
     const isSender = item?.sender?._id === loggedUserId;
 
-    if (item?.type === "files") {
-        return <View style={[styles.messageRow, isSender ? styles.rightMessageRow : styles.leftMessageRow]}>
-            {!isSender && <Avatar imageUrl={item?.sender?.profile} size={30} iconSize={30} />}
-            <View style={isSender ? styles.myMessage : styles.otherMessage}>
-                {item?.uri && (
-                    <Image source={{ uri: item.uri }} style={{ width: 100, height: 100 }} />
-                )}
-                <Text style={[styles.messageText, isSender ? { color: COLORS.WHITE } : { color: COLORS.BLACK }]}>
-                    {item?.content}
-                </Text>
-                {isSender && item.uploadPercentage !== undefined && (
-                    <Text style={styles.uploadPercentageText}>
-                        {item.uploadPercentage}%
-                    </Text>
-                )}
-            </View>
-        </View>
+    if (item?.type === "file") {
+        if (item?.files?.length > 0) {
+            return item?.files?.map((file) => {
+                return <View key={file?._id} style={[styles.messageRow, isSender ? styles.rightMessageRow : styles.leftMessageRow]}>
+                    {!isSender && <Avatar imageUrl={item?.sender?.profile} size={30} iconSize={30} />}
+                    <View style={isSender ? styles.myMessage : styles.otherMessage}>
+                        {file?.url && (
+                            <Image source={{ uri: file?.url }} style={{ width: 100, height: 100 }} />
+                        )}
+                        <Text style={[styles.messageText, isSender ? { color: COLORS.WHITE } : { color: COLORS.BLACK }]}>
+                            {item?.content}
+                        </Text>
+                        {isSender && item.uploadPercentage !== undefined && (
+                            <Text style={styles.uploadPercentageText}>
+                                {item.uploadPercentage}%
+                            </Text>
+                        )}
+                    </View>
+                </View>
+            })
+        } else {
+            return null
+        }
+
+
     }
     return (
         <View style={[styles.messageRow, isSender ? styles.rightMessageRow : styles.leftMessageRow]}>
@@ -67,23 +75,27 @@ export default function ChatScreen({ navigation, route }) {
     const chatId = route?.params?.chatId;
     const { data, error } = useGetChatDetailsQuery(chatId, { skip: !chatId });
     const chatDetails = data?.data;
-    const { data: messagesData } = useGetMessagesQuery(chatId, { skip: !chatId });
+    const { data: messagesData, refetch } = useGetMessagesQuery(chatId, { skip: !chatId });
     const [menuVisible, setMenuVisible] = useState(false);
-    const [images, setImages] = useState([]);
     const [uploadFile, { isLoading }] = useUploadFileMutation();
     const [finalizeUpload] = useFinalizeUploadMutation();
 
-    const sendMessage = () => {
+    const sendMessage = (files?: any) => {
+        const messageData: ISendMessage = {
+            chatId: chatId,
+            message: "",
+            senderId: user?.userId,
+            files: []
+        }
         if (message.trim().length > 0) {
-            if (socket?.connected && chatId) {
-                const messageDataToEmit: ISendMessage = {
-                    chatId: chatId,
-                    message: message.trim(),
-                    senderId: user?.userId
-                }
-                socket.emit(SOCKET_EVENTS.SEND_MESSAGE, messageDataToEmit)
-            }
+            messageData.message = message.trim()
             setMessage("");
+        }
+        if (files?.length) {
+            messageData.files = files
+        }
+        if (socket?.connected && chatId && (message || files?.length)) {
+            socket.emit(SOCKET_EVENTS.SEND_MESSAGE, messageData)
         }
     };
     const dispatch = useDispatch();
@@ -93,6 +105,7 @@ export default function ChatScreen({ navigation, route }) {
             socket.emit(SOCKET_EVENTS.JOIN_CHAT, { userId: user?.userId, chatId: chatId });
 
             const handleNewMessage = (data) => {
+            console.log("ite`m in else", data);
                 setMessages((prevMessages) => [...prevMessages, data]);
                 dispatch(
                     messagesApi?.util?.updateQueryData("getMessages", chatId, (draft) => {
@@ -115,23 +128,30 @@ export default function ChatScreen({ navigation, route }) {
         }
     }, [messagesData]);
 
-    const bottomSheetRef = useRef(null);
-    const startUpload = (newImages) => {
-        newImages.forEach((image, index) => {
-            const interval = setInterval(() => {
-                setImages(prevImages => {
-                    const updatedImages = [...prevImages];
-                    const currentImage = updatedImages[updatedImages.length - newImages.length + index];
-                    if (currentImage?.uploadPercentage < 100) {
-                        currentImage.uploadPercentage += 10; // Increment upload percentage
-                    } else {
-                        clearInterval(interval); // Stop the interval when 100% is reached
-                    }
-                    return updatedImages;
-                });
-            }, 1000); // Update every second
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('focus', () => {
+            refetch();  // Manually refetch messages when the screen is focused
         });
+    
+        return unsubscribe;
+    }, [navigation, refetch]);
+    const bottomSheetRef = useRef(null);
+    const uploadFilesParallel = async (files) => {
+        const uploadPromises = files.map(async (file) => {
+            const blob = await uriToBlob(file.uri);
+            if (blob) {
+                const { url: fileUrl } = await uploadFile({
+                    blob,
+                    filename: file.name,
+                    filetype: file.type
+                }).unwrap();
+                return finalizeUpload({ fileId: fileUrl.split('/').pop() });
+            }
+        });
+
+        return Promise.all(uploadPromises);
     };
+
 
     const openMediaPicker = async (type: 'image' | 'video' | 'document' | 'audio' | 'gallery' | 'camera') => {
         let result;
@@ -151,23 +171,14 @@ export default function ChatScreen({ navigation, route }) {
                         sender: { _id: user?.userId },
                     }));
 
-                    console.log('newImages', newImages);
+                    const uploadedResult = await uploadFilesParallel(result?.assets);
+                    if (uploadedResult?.length) {
+                        const files = uploadedResult?.map(({ data }) => data?.data)?.filter(Boolean);
 
-                    setMessages(prevMessages => [...prevMessages, ...newImages]);
-                    const file = newImages[0];
-                    const blob = await uriToBlob(file?.uri);
-                    if (blob) {
-                        const { url: fileUrl } = await uploadFile({
-                            blob,
-                            filename: file.name,
-                            filetype: file.type
-                        }).unwrap();
-                        const fileId = (fileUrl || '')?.split('/')?.pop()
-                        if (fileId) {
-                            const newData = await finalizeUpload({ fileId });
-                            console.log('newDatanewData', newData)
-                        }
+                        setMessages(prevMessages => [...newImages, ...prevMessages]);
+                        return sendMessage(files);
                     }
+
 
                     // startUpload(newImages);
                 } catch (err) {

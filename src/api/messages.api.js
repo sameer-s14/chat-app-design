@@ -20,8 +20,8 @@ export const messagesApi = createApi({
                 url: `messages/${chatId}`,
                 params,
             }),
-            providesTags: (result, error, chatId) => [{ type: "Messages", id: chatId }],
-            keepUnusedDataFor: 10,
+            // providesTags: (result, error, chatId) => [{ type: "Messages", id: chatId }],
+            // keepUnusedDataFor: 10,
         }),
 
     }),
