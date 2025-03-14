@@ -24,3 +24,11 @@ export const addMessagesToGroup = (
 
     return groupedMessages;
 };
+
+
+export const isLastInSequence = (messages, index) => {
+  if (index === messages?.length - 1) return true; // Last message in the group
+  const currentSender = messages[index].sender._id;
+  const nextSender = messages[index + 1].sender._id;
+  return currentSender !== nextSender; // Next message is from a different sender
+};

@@ -35,7 +35,7 @@ const NewChatOptionList = ({ navigation }) => {
       {!searchTerm && (
         <>
           <TouchableOpacity style={styles.chatItem} onPress={() => navigation.navigate("NewGroup")}>
-            <Avatar icon="person-add" iconSize={35} />
+            <Avatar icon="person-add" iconSize={35} backgroundColor={COLORS.PRIMARY} />
             <View style={styles.chatDetails}>
               <Text style={styles.name}>New group</Text>
             </View>
@@ -44,7 +44,7 @@ const NewChatOptionList = ({ navigation }) => {
             style={[styles.chatItem, styles.borderBottom]}
             onPress={() => navigation.navigate("CreateContact")}
           >
-            <Avatar icon="people" iconSize={35} />
+            <Avatar icon="people" iconSize={35} backgroundColor={COLORS.PRIMARY} />
             <View style={styles.chatDetails}>
               <Text style={styles.name}>New contact</Text>
             </View>

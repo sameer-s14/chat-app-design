@@ -3,7 +3,6 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import Login from '@/src/screens/Login';
 import OtpVerification from '@/src/screens/OtpVerification';
-import Home from '@/src/screens/Home';
 import NewChatOptionList from '@/src/screens/NewChatOptionList';
 import NewGroup from '@/src/screens/NewGroup';
 import CreateGroup from '@/src/screens/CreateGroup';
@@ -16,6 +15,7 @@ import ProfileInputScreen from '@/src/screens/ProfileInputScreen';
 import AboutScreen from '@/src/screens/About';
 import ChatInfo from '@/src/screens/ChatInfo';
 import AddMembers from '@/src/screens/AddMembers';
+import { HomeTabsNavigation } from './HomeNavigation';
 
 // Define types for your navigation
 export type RootStackParamList = {
@@ -43,11 +43,11 @@ export default function AppNavigator() {
         />
         <Stack.Screen
           name="Home"
-          component={Home}
+          component={HomeTabsNavigation}
           options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="SelectUser"
+          name="NewChat"
           component={NewChatOptionList}
           options={{ headerShown: false }}
         />

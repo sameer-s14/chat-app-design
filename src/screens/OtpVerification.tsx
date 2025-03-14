@@ -5,9 +5,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Keyboard,
+  Animated,
 } from "react-native";
-import { COLORS, Font, RESEND_SEC } from "../constants";
+import { LinearGradient } from "expo-linear-gradient";
 import { OtpInput } from "react-native-otp-entry";
+import { COLORS, Font, RESEND_SEC } from "../constants";
 import { hs, ws } from "../utils";
 import { useLoginWithPhoneMutation, useVerifyOtpMutation } from "../api/auth.api";
 import Loader from "../components/Loader";
@@ -21,16 +23,16 @@ const OtpVerification = ({ navigation, route }) => {
   const { phone, countryCode } = route?.params || {};
   const dispatch = useDispatch();
   const [timer, setTimer] = useState(RESEND_SEC);
-
   const [verifyOtp, { isLoading }] = useVerifyOtpMutation();
   const [loginWithPhone] = useLoginWithPhoneMutation();
+  const canResend = useRef(false);
+  const progress = useRef(new Animated.Value(1)).current;
 
-  const canResend: any = useRef();
   useEffect(() => {
     let interval;
     if (timer > 0 && !canResend.current) {
       interval = setInterval(() => {
-        setTimer(prevTimer => prevTimer - 1);
+        setTimer((prevTimer) => prevTimer - 1);
       }, 1000);
     } else if (timer === 0) {
       canResend.current = true;
@@ -39,6 +41,16 @@ const OtpVerification = ({ navigation, route }) => {
 
     return () => clearInterval(interval);
   }, [timer, canResend.current]);
+
+  useEffect(() => {
+    if (timer > 0) {
+      Animated.timing(progress, {
+        toValue: 0,
+        duration: RESEND_SEC * 1000,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, []);
 
   const handleVerifyOtp = async () => {
     try {
@@ -63,21 +75,31 @@ const OtpVerification = ({ navigation, route }) => {
     }
   };
 
-  function handleResend() {
-    const loginData = { phone: phone, countryCode: countryCode }
+  const handleResend = () => {
+    const loginData = { phone: phone, countryCode: countryCode };
     loginWithPhone(loginData).unwrap();
-  }
+    setTimer(RESEND_SEC);
+    canResend.current = false;
+    progress.setValue(1);
+    Animated.timing(progress, {
+      toValue: 0,
+      duration: RESEND_SEC * 1000,
+      useNativeDriver: false,
+    }).start();
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{t('ENTER_VERIFICATION_CODE')}</Text>
-      <Text style={styles.subtitle}>
-        {t('ENTER_OTP_CODE_SENT')}
-      </Text>
+    <LinearGradient
+      colors={[COLORS.PRIMARY, COLORS.SECONDARY]}
+      style={styles.container}
+    >
+      <Text style={styles.title}>{t("ENTER_VERIFICATION_CODE")}</Text>
+      <Text style={styles.subtitle}>{t("ENTER_OTP_CODE_SENT")}</Text>
 
       <View style={styles.otpContainer}>
         <OtpInput
           numberOfDigits={5}
-          focusColor={COLORS.PRIMARY}
+          focusColor={COLORS.ACCENT}
           focusStickBlinkingDuration={500}
           onTextChange={setOtp}
           onFilled={(text) => {
@@ -93,28 +115,45 @@ const OtpVerification = ({ navigation, route }) => {
           }}
         />
       </View>
+
       <View style={styles.sendContainer}>
-        <Text style={styles.sendText}>{t('DIDNT_RECEIVE_CODE')}</Text>
+        <Text style={styles.sendText}>{t("DIDNT_RECEIVE_CODE")}</Text>
         {canResend.current ? (
           <TouchableOpacity onPress={handleResend}>
-            <Text style={styles.sendBtn}>{t('SEND_AGAIN')}</Text>
+            <Text style={styles.sendBtn}>{t("SEND_AGAIN")}</Text>
           </TouchableOpacity>
         ) : (
-          <Text style={styles.sendTextTime}>{`${t(
-            'RESEND_IN',
-          )} ${timer}s`}</Text>
+          <Text style={styles.sendTextTime}>{`${t("RESEND_IN")} ${timer}s`}</Text>
         )}
       </View>
-      {<Text style={styles.errorText}>{errorMessage}</Text>}
+
+      {/* Progress Bar for Resend Timer */}
+      <View style={styles.progressBarContainer}>
+        <Animated.View
+          style={[
+            styles.progressBar,
+            {
+              width: progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: ["0%", "100%"],
+              }),
+            },
+          ]}
+        />
+      </View>
+
+      {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
+
       <TouchableOpacity
         style={[styles.button, otp.length !== 5 && styles.disabledButton]}
         onPress={handleVerifyOtp}
         disabled={otp.length !== 5}
       >
-        <Text style={styles.buttonText}>{t('VERIFY')}</Text>
+        <Text style={styles.buttonText}>{t("VERIFY")}</Text>
       </TouchableOpacity>
+
       {isLoading && <Loader />}
-    </View>
+    </LinearGradient>
   );
 };
 
@@ -126,18 +165,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#fff",
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
-    color: "#333",
+    color: COLORS.WHITE,
     marginBottom: 10,
   },
   subtitle: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 20,
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.8)",
+    marginBottom: 30,
     textAlign: "center",
   },
   otpContainer: {
@@ -146,12 +184,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   button: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: COLORS.ACCENT,
     width: "100%",
     paddingVertical: 15,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 20,
+    shadowColor: COLORS.ACCENT,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
   },
   disabledButton: {
     opacity: 0.5,
@@ -159,48 +202,66 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "white",
+    color: COLORS.WHITE,
   },
   pinCodeContainer: {
     borderWidth: 2,
     width: ws(55),
     height: hs(70),
+    borderRadius: 10,
+    borderColor: "rgba(255, 255, 255, 0.3)",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
   pinCodeText: {
-    color: COLORS.PRIMARY,
+    color: COLORS.WHITE,
     fontSize: 36,
     fontWeight: "400",
   },
   activePinCodeContainer: {
-    borderColor: COLORS.PRIMARY,
+    borderColor: COLORS.ACCENT,
     borderWidth: 2,
     width: ws(55),
     height: hs(70),
+    borderRadius: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
   },
   errorText: {
     fontSize: 14,
-    color: COLORS.RED,
+    color: COLORS.ERROR,
     textAlign: "center",
+    marginTop: 10,
   },
   sendContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 5,
     marginHorizontal: 10,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   sendText: {
     fontSize: 14,
-    fontWeight: '400',
+    fontWeight: "400",
+    color: COLORS.WHITE,
   },
   sendTextTime: {
-    color: COLORS.DARK_SLATE_GRAY,
+    color: COLORS.WHITE,
     fontSize: 14,
-    fontWeight: '400',
+    fontWeight: "400",
   },
   sendBtn: {
     fontSize: 14,
-    fontWeight: '400',
-    color: COLORS.PRIMARY,
-  }
-
+    fontWeight: "400",
+    color: COLORS.ACCENT,
+  },
+  progressBarContainer: {
+    width: "80%",
+    height: 5,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 5,
+    marginTop: 10,
+    overflow: "hidden",
+  },
+  progressBar: {
+    height: "100%",
+    backgroundColor: COLORS.ACCENT,
+  },
 });

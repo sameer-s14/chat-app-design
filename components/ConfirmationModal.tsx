@@ -7,17 +7,19 @@ import {
   Modal,
   TouchableOpacity,
   StyleSheet,
+  ViewStyle,
 } from "react-native";
 
 const ConfirmationModal = ({
   visible,
   onClose,
   onConfirm,
-  confirmBackgroundColor,
+  confirmBackgroundColor = "red",
+  confirmButtonStyle = {},
   confirmText = "Logout",
   headingText = "Are you sure?",
   subHeading = "You are about to log out of your account.",
-}) => {
+}: any & { confirmButtonStyle: ViewStyle }) => {
   return (
     <Modal
       animationType="fade"
@@ -45,6 +47,7 @@ const ConfirmationModal = ({
               style={[
                 styles.button,
                 { backgroundColor: confirmBackgroundColor || COLORS.PRIMARY },
+                confirmButtonStyle
               ]}
             >
               <Text style={styles.buttonText}>{confirmText}</Text>
@@ -97,6 +100,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginHorizontal: 10,
     padding: 5,
+    paddingHorizontal: 10
   },
   buttonText: {
     fontSize: 16,
