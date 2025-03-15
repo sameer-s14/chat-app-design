@@ -109,10 +109,11 @@ const ChatScreen = ({ navigation }) => {
     <TouchableOpacity
       style={styles.chatItem}
       onPress={() => {
-        if(isSearchVisible){
+        if (isSearchVisible) {
           setIsSearchVisible(false);
         }
-        navigation.navigate("MessagesList", { chatId: item._id })}}
+        navigation.navigate("MessagesList", { chatId: item._id })
+      }}
     >
       <ProfilePic name={item?.name} image={item?.image} isOnline={true} />
       <View style={styles.chatContent}>
@@ -140,14 +141,6 @@ const ChatScreen = ({ navigation }) => {
       </View>
     </TouchableOpacity>
   );
-
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0084FF" />
-      </View>
-    );
-  }
 
   if (isError) {
     return (
@@ -202,26 +195,30 @@ const ChatScreen = ({ navigation }) => {
           </Animated.View>
         )}
 
+        {isLoading && <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0084FF" />
+        </View>}
         {/* Chat List */}
-        <FlatList
-          data={filteredChats}
-          keyExtractor={(item) => item._id}
-          renderItem={renderChatItem}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No conversations found</Text>
-            </View>
-          }
-        />
+        {!isLoading && <>
+          <FlatList
+            data={filteredChats}
+            keyExtractor={(item) => item._id}
+            renderItem={renderChatItem}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No conversations found</Text>
+              </View>
+            }
+          />
 
-        {/* Floating Action Button */}
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => navigation.navigate("NewChat")}
-        >
-          <Ionicons name="create-outline" size={28} color="#FFFFFF" />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() => navigation.navigate("NewChat")}
+          >
+            <Ionicons name="create-outline" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+        </>}
 
         {/* Menu */}
         {menuVisible && (

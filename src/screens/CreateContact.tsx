@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../components/Header";
-import { ActivityIndicator, Image, SectionList, StyleSheet, Text } from "react-native";
+import { ActivityIndicator, Image, SectionList, StyleSheet, Text, Animated, Easing, Vibration } from "react-native";
 import { COLORS } from "../constants";
 import { View } from "react-native";
 import { TouchableOpacity } from "react-native";
@@ -21,30 +21,56 @@ const CreateContact = ({ navigation }) => {
   const [countryCode, setCountryCode] = useState(initialValues);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState("");
+  const [buttonScale] = useState(new Animated.Value(1)); // Animation for button press
+  const [fadeAnim] = useState(new Animated.Value(0)); // Animation for error modal
+
   const handlePhoneChange = (text: string) => {
     const value = text.replace(/\D/g, ""); // Remove non-numeric characters
     setPhoneNumber(value);
   };
+
   const [addUserContact, { isLoading }] = useAddUserContactMutation();
 
-  async function handleAddContact() {
+  const handleAddContact = async () => {
+    if (!isValidMobile(phoneNumber, countryCode?.code)) return;
+
+    Vibration.vibrate(50); // Haptic feedback
+    Animated.sequence([
+      Animated.timing(buttonScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     try {
       await addUserContact({
         phone: phoneNumber,
-        countryCode: countryCode?.code
+        countryCode: countryCode?.code,
       }).unwrap();
-      setPhoneNumber('')
+      setPhoneNumber("");
     } catch (err) {
-      setError(err?.data?.message || err?.message || 'Unable to add contact')
+      setError(err?.data?.message || err?.message || "Unable to add contact");
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     }
-
-  }
+  };
 
   const isValidPhoneNumber = isValidMobile(phoneNumber, countryCode?.code);
+
   return (
     <SafeAreaView style={styles.container}>
       <Header heading="New Contact" backHandler={() => navigation.goBack()} />
       <View style={{ paddingHorizontal: 10 }}>
+        {/* Phone Input Section */}
         <View style={styles.phoneInputContainer}>
           <TouchableOpacity onPress={() => setModalVisible(true)}>
             <Text style={styles.countryCode}>{countryCode?.code}</Text>
@@ -52,22 +78,30 @@ const CreateContact = ({ navigation }) => {
           <TextInput
             style={styles.phoneInput}
             placeholder={t("ENTER_PHONE")}
+            placeholderTextColor={COLORS.TEXT_LIGHT}
             keyboardType="numeric"
             value={phoneNumber}
             onChangeText={handlePhoneChange}
           />
         </View>
+
+        {/* Add Button */}
         <TouchableOpacity
-          style={[styles.button,
-          (!isValidPhoneNumber || isLoading) && { opacity: 0.5 },
-          ]}
+          style={[styles.button, (!isValidPhoneNumber || isLoading) && styles.disabledButton]}
           disabled={!isValidPhoneNumber || isLoading}
           onPress={handleAddContact}
+          activeOpacity={0.8}
         >
-          {!isLoading ? <Text style={styles.buttonText}>Add</Text> :
-            <ActivityIndicator color={COLORS.WHITE} />}
+          <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+            {!isLoading ? (
+              <Text style={styles.buttonText}>Add</Text>
+            ) : (
+              <ActivityIndicator color={COLORS.WHITE} />
+            )}
+          </Animated.View>
         </TouchableOpacity>
 
+        {/* Country Picker Modal */}
         <CountryPicker
           show={modalVisible}
           lang="en"
@@ -88,9 +122,28 @@ const CreateContact = ({ navigation }) => {
         />
       </View>
 
+      {/* User Contacts Section */}
+      <UserContacts
+        search={phoneNumber}
+        mobileContactHeading={"Invite Users"}
+        savedContactHeading={"Saved Contacts"}
+        searchType="number"
+      />
 
-      <UserContacts search={phoneNumber} mobileContactHeading={"Invite Users"} savedContactHeading={"Saved Contacts"} searchType="number" />
-      {error && <ErrorModal message={error} isVisible={error?.length > 0} onClose={() => setError('')} />}
+      {/* Error Modal */}
+      {error && (
+        <ErrorModal
+          message={error}
+          isVisible={error?.length > 0}
+          onClose={() => {
+            Animated.timing(fadeAnim, {
+              toValue: 0,
+              duration: 300,
+              useNativeDriver: true,
+            }).start(() => setError(""));
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -100,7 +153,7 @@ const styles = StyleSheet.create({
   phoneInputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "white",
+    backgroundColor: COLORS.WHITE,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
@@ -108,60 +161,40 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: COLORS.LIGHT_GRAY,
     width: "100%",
+    shadowColor: COLORS.BLACK,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   countryCode: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
+    color: COLORS.TEXT_DARK,
     marginRight: 10,
     paddingRight: 10,
     borderRightWidth: 1,
-    borderColor: COLORS.LIGHT_GRAY
+    borderColor: COLORS.LIGHT_GRAY,
   },
   phoneInput: {
     flex: 1,
     fontSize: 16,
     paddingVertical: 10,
-    color: "#333",
-  },
-  list: { paddingBottom: 20 },
-  chatItem: {
-    flexDirection: "row",
-    padding: 10,
-  },
-  avatar: {
-    width: 45,
-    height: 45,
-    borderRadius: 25,
-    marginRight: 10,
-  },
-  defaultAvatar: {
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#B0BEC5",
-  },
-  chatDetails: { flex: 1, justifyContent: "center" },
-  chatHeader: { flexDirection: "row", justifyContent: "space-between" },
-  name: { fontWeight: "bold", fontSize: 16 },
-  time: { fontSize: 12, color: "gray" },
-  lastMessage: { fontSize: 14, color: "gray", marginTop: 4 },
-  sectionHeader: {
-    paddingLeft: 10,
-    paddingVertical: 5,
-    fontWeight: 400
-  },
-  borderBottom: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    color: COLORS.TEXT_DARK,
   },
   button: {
     backgroundColor: COLORS.PRIMARY,
     width: "90%",
-    alignSelf: 'center',
+    alignSelf: "center",
     paddingVertical: 15,
     borderRadius: 8,
     alignItems: "center",
     marginVertical: 10,
+    shadowColor: COLORS.BLACK,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   disabledButton: {
     opacity: 0.5,
@@ -169,7 +202,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "white",
+    color: COLORS.WHITE,
   },
 });
 

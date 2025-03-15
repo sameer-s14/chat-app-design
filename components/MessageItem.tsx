@@ -1,25 +1,49 @@
-import Avatar from "@/src/components/Avatar";
-import { COLORS } from "@/src/constants";
+import React from "react";
 import { Text, View, StyleSheet, Image } from "react-native";
-
-const MessageItem = ({ item, loggedUserId, isLastInSequence }) => {
+import { Ionicons } from "@expo/vector-icons";
+import Avatar from "@/src/components/Avatar";
+import { COLORS, MESSAGE_TYPES } from "@/src/constants";
+import { TouchableOpacity } from "react-native-gesture-handler";
+import ProfilePic from "@/src/components/ProfilePic";
+import ReplyPreview from "@/src/components/ReplyPreview";
+const MessageItem = React.memo(({ item, loggedUserId, isLastInSequence, selectedCount, onLongPress, selected, onPress }) => {
     const isSender = item?.sender?._id === loggedUserId;
 
-    if (item.type === "event") {
+    if (item.type === MESSAGE_TYPES.EVENT) {
         return <Text style={styles.eventText}>{item?.message}</Text>;
     }
 
-    if (item?.type === "file" && item?.files?.length > 0) {
+
+    if (item?.type === MESSAGE_TYPES.FILE && item?.files?.length > 0) {
         const files = item.files;
         const remainingCount = files.length - 1;
 
         return (
-            <View
+            <TouchableOpacity
+                onLongPress={onLongPress}
+                onPress={onPress}
+                activeOpacity={1}
                 style={[
                     styles.messageRow,
+                    selected && {
+                        backgroundColor: "rgba(0, 123, 255, 0.1)",
+                    },
                     isSender ? styles.rightMessageRow : styles.leftMessageRow,
                 ]}
             >
+                {/* Checkbox */}
+                {selectedCount > 0 ? selected ? (
+                    <View
+                        style={styles.checkboxContainer}
+                    >
+                        <Ionicons name="checkmark-circle" size={20} color={COLORS.PRIMARY} />
+                    </View>
+                ) : (
+                    <View
+                        style={styles.checkboxPlaceholder}
+                    >
+                    </View>
+                ) : null}
                 {!isSender && (
                     <Avatar imageUrl={item?.sender?.profile} size={30} iconSize={30} />
                 )}
@@ -53,21 +77,42 @@ const MessageItem = ({ item, loggedUserId, isLastInSequence }) => {
                         </Text>
                     )}
                 </View>
-            </View>
+            </TouchableOpacity>
         );
     }
-
+    const replyPreview = item?.messageReply;
     return (
-        <View
+        <TouchableOpacity
+            onLongPress={onLongPress}
+            onPress={onPress}
+            activeOpacity={1}
             style={[
                 styles.messageRow,
+                selected && {
+                    backgroundColor: "rgba(0, 123, 255, 0.1)",
+                },
                 isSender ? styles.rightMessageRow : styles.leftMessageRow,
             ]}
         >
+            {/* Checkbox */}
+            {selectedCount > 0 ? selected ? (
+                <View
+                    style={styles.checkboxContainer}
+                >
+                    <Ionicons name="checkmark-circle" size={20} color={COLORS.PRIMARY} />
+                </View>
+            ) : (
+                <View
+                    style={styles.checkboxPlaceholder}
+                >
+                </View>
+            ) : null}
+
             {!isSender && (
-                <Avatar imageUrl={item?.sender?.profile} size={30} iconSize={30} />
+                <ProfilePic name={item?.sender?.name} image={item?.sender?.profile} size={30} />
             )}
             <View style={isSender ? styles.myMessage : styles.otherMessage}>
+                {(item?.type === MESSAGE_TYPES.REPLY && replyPreview) && <ReplyPreview replyPreview={replyPreview} />}
                 <Text
                     style={[
                         styles.messageText,
@@ -85,10 +130,9 @@ const MessageItem = ({ item, loggedUserId, isLastInSequence }) => {
                     </Text>
                 )}
             </View>
-        </View>
+        </TouchableOpacity>
     );
-};
-
+});
 
 const styles = StyleSheet.create({
     imageGrid: {
@@ -102,8 +146,9 @@ const styles = StyleSheet.create({
     },
     messageRow: {
         flexDirection: "row",
-        alignItems: "flex-end",
+        alignItems: "center",
         marginVertical: 5,
+        paddingHorizontal: 15,
     },
     rightMessageRow: {
         justifyContent: "flex-end",
@@ -157,5 +202,22 @@ const styles = StyleSheet.create({
         height: 100,
         borderRadius: 10,
     },
-})
+    checkboxContainer: {
+        marginRight: 10, // Space between checkbox and message
+    },
+    checkboxPlaceholder: {
+        width: 30,
+    },
+});
+
+// const areEqual = (prevProps, nextProps) => {
+//     return (
+//         prevProps.item._id === nextProps.item._id &&
+//         prevProps.selected === nextProps.selected &&
+//         prevProps.isLastInSequence === nextProps.isLastInSequence
+//     );
+// };
+
+
+// export default React.memo(MessageItem, areEqual);
 export default MessageItem;

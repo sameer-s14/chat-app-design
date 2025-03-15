@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,9 +9,9 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  Modal,
+  LayoutAnimation,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons, Octicons } from "@expo/vector-icons";
 import { COLORS, SOCKET_EVENTS } from "../constants";
 import EmojiSelector from "react-native-emoji-selector";
 import * as ImagePicker from "expo-image-picker";
@@ -21,9 +21,13 @@ import { useFinalizeUploadMutation, useGetChatDetailsQuery, useGetMessagesQuery,
 import { useDispatch, useSelector } from "react-redux";
 import { ISendMessage } from "../interface";
 import MessageItem from "@/components/MessageItem";
-import { isLastInSequence, uriToBlob } from "../utils";
+import { getCopiedText, groupMessagesByDate, isLastInSequence, uriToBlob, ws } from "../utils";
 import DateSeparator from "../components/DateSeperator";
 import ProfilePic from "../components/ProfilePic";
+import AnimatedHeader from "@/components/AnimatedHeader";
+import * as Clipboard from "expo-clipboard";
+import CustomToast from "../components/CustomToast";
+import ReplyPreview from "../components/ReplyPreview";
 
 const mediaOptions = [
   { name: "Images", icon: "image", type: "image" },
@@ -34,26 +38,7 @@ const mediaOptions = [
   { name: "Camera", icon: "camera", type: "camera" },
 ];
 
-
-const groupMessagesByDate = (messages) => {
-  const groupedMessages = {};
-  messages.forEach((message) => {
-    const date = new Date(message.createdAt).toDateString();
-    if (!groupedMessages[date]) {
-      groupedMessages[date] = [];
-    }
-    groupedMessages[date].push(message);
-  });
-
-  return Object.entries(groupedMessages).map(([date, messages]) => ({
-    date,
-    messages,
-  }));
-};
-
-
-
-export default function ChatScreen({ navigation, route }) {
+export default function MessagesList({ navigation, route }) {
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
   const { user } = useSelector((state) => state?.auth);
@@ -66,11 +51,18 @@ export default function ChatScreen({ navigation, route }) {
   const bottomSheetRef = useRef(null);
   const inputRef = useRef(null);
   const { socket } = useSelector((state) => state?.socket);
-  const groupedMessages = groupMessagesByDate(messages);
+  const groupedMessages = useMemo(() => groupMessagesByDate(messages), [messages]);
   const [uploadFile, { isLoading }] = useUploadFileMutation();
   const [finalizeUpload] = useFinalizeUploadMutation();
+  const [selectedMessages, setSelectedMessages] = useState({});
+  const selectedMessageCount = Object.keys(selectedMessages)?.length;
+  const [toastMessage, setToastMessage] = useState('');
+  const [previewMessage, setPreviewMessage] = useState(null);
 
   const sendMessage = (files?: any) => {
+    if (previewMessage) {
+      setPreviewMessage(null)
+    }
     const messageData: ISendMessage = {
       chatId: chatId,
       message: "",
@@ -83,6 +75,10 @@ export default function ChatScreen({ navigation, route }) {
     }
     if (files?.length) {
       messageData.files = files
+    }
+    if (previewMessage?._id) {
+      messageData.replyTo = previewMessage?._id
+      setPreviewMessage(null)
     }
     if (socket?.connected && chatId && (message || files?.length)) {
       socket.emit(SOCKET_EVENTS.SEND_MESSAGE, messageData)
@@ -189,54 +185,70 @@ export default function ChatScreen({ navigation, route }) {
     }
     // Handle the result as needed
   };
+  useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  }, [selectedMessages]);
+
+  const OnMessageSelect = useCallback((message) => {
+    setSelectedMessages((prev) => {
+      const copied = { ...(prev || {}) }
+      copied[message?._id] ? delete copied[message?._id] : copied[message?._id] = message;
+      return copied;
+
+    })
+  });
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.BLACK} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => {
-            navigation.navigate('ChatInfo', { chatId })
-          }}
-          style={styles.headingSection}>
+      {/* ANIMATED HEADER */}
+      <AnimatedHeader
+        selectedMessages={selectedMessages || {}}
+        onBack={() => setSelectedMessages({})}
+        onReply={() => {
+          setPreviewMessage(Object.values(selectedMessages)[0] || null)
+          setSelectedMessages({})
+        }}
+        onCopy={async () => {
+          const sortedMessages = (Object.values(selectedMessages) || [])?.sort((a, b) => new Date(a?.createdAt) - new Date(b?.createdAt));
+          const messages = getCopiedText(sortedMessages)
+          if (messages) {
+            await Clipboard.setStringAsync(messages);
+            setSelectedMessages({})
+            setToastMessage(`${selectedMessageCount} copied`)
+          }
+        }}
+        onDelete={() => {
+          const messageId = Object.keys(selectedMessages)[0];
+          console.log('Delete message:', messageId);
+          setSelectedMessages({});
+        }}
+        onForward={() => {
+          const messageId = Object.keys(selectedMessages)[0];
+          console.log('Forward message:', messageId);
+        }}
+      />
 
-          <ProfilePic name={chatDetails?.name} size={40} image={chatDetails?.image} />
-          <Text style={styles.headerText}>{chatDetails?.name}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setMenuVisible(true)} style={{ marginStart: 'auto' }}>
-          <Ionicons name="ellipsis-vertical" size={24} color={COLORS.BLACK} />
-        </TouchableOpacity>
-        <Modal
-          transparent
-          animationType="fade"
-          visible={menuVisible}
-          onRequestClose={() => setMenuVisible(false)}
-        >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setMenuVisible(false)}
-          >
-            <View style={styles.menu}>
-              <TouchableOpacity style={styles.menuItem} onPress={() => {
-                setMenuVisible(false);
-                navigation.navigate('ChatInfo', { chatId })
-              }}>
-                <Text style={styles.menuText}>View Profile</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={() => alert("Clear Chat")}>
-                <Text style={styles.menuText}>Clear Chat</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={() => alert("Exit Chat")}>
-                <Text style={styles.menuText}>Exit Chat</Text>
-              </TouchableOpacity>
-            </View>
+      {/* DEFAULT HEADER */}
+      {!selectedMessageCount && (
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.BLACK} />
           </TouchableOpacity>
-        </Modal>
-      </View>
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate('ChatInfo', { chatId });
+            }}
+            style={styles.headingSection}
+          >
+            <ProfilePic name={chatDetails?.name} size={40} image={chatDetails?.image} />
+            <Text style={styles.headerText}>{chatDetails?.name}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setMenuVisible(true)} style={{ marginStart: 'auto' }}>
+            <Ionicons name="ellipsis-vertical" size={24} color={COLORS.BLACK} />
+          </TouchableOpacity>
+        </View>
+      )}
+
 
       {/* MESSAGES LIST */}
       <FlatList
@@ -245,14 +257,24 @@ export default function ChatScreen({ navigation, route }) {
         renderItem={({ item }) => (
           <View>
             <DateSeparator date={item.date} />
-            {item?.messages.map((message, index) => (
-              <MessageItem
-                key={message._id}
-                item={message}
-                loggedUserId={user?.userId}
-                isLastInSequence={isLastInSequence(item?.messages, index)}
-              />
-            ))}
+            {item?.messages.map((message, index) => {
+              return (
+                <MessageItem
+                  selectedCount={selectedMessageCount}
+                  selected={!!selectedMessages[message._id]}
+                  key={message._id}
+                  item={message}
+                  onLongPress={() => OnMessageSelect(message)}
+                  onPress={() => {
+                    if (Object.keys(selectedMessages)?.length) {
+                      OnMessageSelect(message)
+                    }
+                  }}
+                  loggedUserId={user?.userId}
+                  isLastInSequence={isLastInSequence(item?.messages, index)}
+                />
+              )
+            })}
           </View>
         )}
         contentContainerStyle={styles.messageList}
@@ -271,6 +293,10 @@ export default function ChatScreen({ navigation, route }) {
         </View>
       )}
 
+      {previewMessage && <ReplyPreview
+        replyPreview={previewMessage}
+        onClose={() => setPreviewMessage(null)}
+      />}
       {/* SEND MESSAGE SECTION */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -291,11 +317,14 @@ export default function ChatScreen({ navigation, route }) {
         </TouchableOpacity>
         <TextInput
           ref={inputRef}
-          style={[styles.input, { fontSize: 16 }]}
+          style={[styles.input]}
           placeholder="Type a message..."
           placeholderTextColor={COLORS.TEXT_LIGHT}
-          value={message}
-          onChangeText={setMessage}
+          value={message || "\n"}
+          onChangeText={(text) => setMessage(text.replace(/^\n$/, ""))}
+          multiline={true}
+          numberOfLines={6}
+          scrollEnabled={true}
         />
         <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
           <Ionicons name="send" size={20} color={COLORS.WHITE} />
@@ -328,6 +357,7 @@ export default function ChatScreen({ navigation, route }) {
           ))}
         </View>
       </CommonBottomSheet>
+      <CustomToast visible={toastMessage?.length > 0} message={toastMessage} onHide={() => setToastMessage('')} />
     </SafeAreaView>
   );
 }
@@ -337,6 +367,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.PALE_GRAY,
+  },
+  animatedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+    backgroundColor: COLORS.WHITE,
+    borderBottomWidth: 1,
+    borderColor: COLORS.SOFT_GRAY,
+    overflow: 'hidden',
+  },
+  headerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconButton: {
+    marginHorizontal: 10,
   },
   headingSection: {
     flexDirection: 'row',
@@ -360,12 +407,11 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_DARK, marginVertical: 10,
   },
   messageList: {
-    paddingHorizontal: 15,
     paddingBottom: 10,
   },
   inputContainer: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     padding: 10,
     backgroundColor: COLORS.WHITE,
     borderTopWidth: 1,
@@ -373,17 +419,22 @@ const styles = StyleSheet.create({
   },
   attachmentButton: {
     marginRight: 10,
+    marginBottom: 8,
   },
   emojiButton: {
     marginRight: 10,
+    marginBottom: 8,
   },
   input: {
     flex: 1,
-    height: 40,
+    minHeight: 40, // Minimum height for 1 line
+    maxHeight: 120, // Maximum height for 6 lines
     backgroundColor: COLORS.SOFT_GRAY,
     borderRadius: 20,
     paddingHorizontal: 15,
+    paddingVertical: 10,
     fontSize: 16,
+    textAlignVertical: "bottom",
   },
   sendButton: {
     marginLeft: 10,
@@ -428,7 +479,6 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    // justifyContent: "center",
     alignItems: "flex-end",
     backgroundColor: "rgba(0, 0, 0, 0.02)",
     paddingRight: 5,

@@ -10,5 +10,6 @@ export interface ISendMessage {
   senderId: string;
   message?: string;
   chatId: string;
+  replyTo: string;
   files?: IMessageFiles[];
 }
