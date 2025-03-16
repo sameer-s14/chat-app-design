@@ -13,3 +13,11 @@ export interface ISendMessage {
   replyTo: string;
   files?: IMessageFiles[];
 }
+
+export interface IReaction {
+  senderId: string;
+  chatId: string;
+  messageId: string;
+  emoji: string;
+  name?: string
+}

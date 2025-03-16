@@ -31,7 +31,7 @@ const ReactionView = ({ modalPosition, visible, closeReactionView, onSelect }) =
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.reactionButton}
-                onPress={() => onSelect && onSelect(item)} // Handle emoji selection
+                onPress={() => onSelect(item)}
               >
                 <Text style={styles.reactionText}>{item}</Text>
               </TouchableOpacity>

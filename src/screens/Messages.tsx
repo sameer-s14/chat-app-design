@@ -21,7 +21,7 @@ import CommonBottomSheet from "../components/CommonBottomSheet";
 import * as DocumentPicker from "expo-document-picker";
 import { useFinalizeUploadMutation, useGetChatDetailsQuery, useGetMessagesQuery, useUploadFileMutation } from "../api";
 import { useDispatch, useSelector } from "react-redux";
-import { ISendMessage } from "../interface";
+import { IReaction, ISendMessage } from "../interface";
 import MessageItem from "@/components/MessageItem";
 import { getCopiedText, groupMessagesByDate, height, isLastInSequence, uriToBlob, ws } from "../utils";
 import DateSeparator from "../components/DateSeperator";
@@ -77,7 +77,7 @@ export default function MessagesList({ navigation, route }) {
       let newTop = y - modalHeight - 5; // Default above
 
       if (newTop < 60) {
-        newTop = y + height + 5; // Place below if not enough space above
+        newTop = y + height + 5;
       }
 
       if (newTop + modalHeight > screenHeight) {
@@ -176,6 +176,21 @@ export default function MessagesList({ navigation, route }) {
     }
     if (socket?.connected && chatId && (message || files?.length)) {
       socket.emit(SOCKET_EVENTS.SEND_MESSAGE, messageData)
+    }
+  };
+
+  const sendReaction = (emoji) => {
+    if (selectedMessage?._id) {
+      const reactionData: IReaction = {
+        chatId: chatId,
+        messageId: selectedMessage?._id,
+        senderId: user?.userId,
+        emoji: emoji
+      }
+      if (socket?.connected && chatId) {
+        socket.emit(SOCKET_EVENTS.REACTION, reactionData)
+      }
+      setSelectedMessage(null)
     }
   };
   const dispatch = useDispatch();
@@ -284,9 +299,13 @@ export default function MessagesList({ navigation, route }) {
   }, [selectedMessages]);
 
   const OnMessageSelect = useCallback((message) => {
+
     setSelectedMessages((prev) => {
       const copied = { ...(prev || {}) }
       copied[message?._id] ? delete copied[message?._id] : copied[message?._id] = message;
+      if (Object?.values(copied)?.length === 1) {
+        handleReactions(message)
+      }
       return copied;
 
     })
@@ -366,7 +385,7 @@ export default function MessagesList({ navigation, route }) {
               if (message?.type === MESSAGE_TYPES.REPLY && message?.messageReply?._id) {
                 return scrollToMessage(message?.messageReply?._id)
               }
-              return handleReactions(message)
+              // return handleReactions(message)
             }}
             loggedUserId={user?.userId}
             isLastInSequence={isLastInSequence(section?.data, index)}
@@ -473,9 +492,11 @@ export default function MessagesList({ navigation, route }) {
         </View>
       </CommonBottomSheet> */}
       <CustomToast visible={toastMessage?.length > 0} message={toastMessage} onHide={() => setToastMessage('')} />
+
       {!!selectedMessage && isReactionVisible && <ReactionView
         modalPosition={modalPosition}
         visible={!!selectedMessage}
+        onSelect={sendReaction}
         closeReactionView={closeReactionView}
       />}
     </SafeAreaView>
