@@ -1,11 +1,11 @@
 import React from "react";
-import { Text, View, StyleSheet, Image,Pressable } from "react-native";
+import { Text, View, StyleSheet, Image, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Avatar from "@/src/components/Avatar";
 import { COLORS, MESSAGE_TYPES } from "@/src/constants";
 import ProfilePic from "@/src/components/ProfilePic";
 import ReplyPreview from "@/src/components/ReplyPreview";
-const MessageItem = React.memo(({ item, loggedUserId, isLastInSequence, selectedCount, onLongPress, selected, onPress }) => {
+const MessageItem = React.memo(({ item, loggedUserId, isLastInSequence, selectedCount, onLongPress, selected, onPress, messageRefs }) => {
     const isSender = item?.sender?._id === loggedUserId;
 
     if (item.type === MESSAGE_TYPES.EVENT) {
@@ -84,7 +84,7 @@ const MessageItem = React.memo(({ item, loggedUserId, isLastInSequence, selected
         <Pressable
             onLongPress={onLongPress}
             onPress={onPress}
-            activeOpacity={1}
+            ref={(ref) => (messageRefs.current[item._id] = ref)}
             style={[
                 styles.messageRow,
                 selected && {

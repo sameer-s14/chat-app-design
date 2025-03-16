@@ -23,7 +23,7 @@ import { useFinalizeUploadMutation, useGetChatDetailsQuery, useGetMessagesQuery,
 import { useDispatch, useSelector } from "react-redux";
 import { ISendMessage } from "../interface";
 import MessageItem from "@/components/MessageItem";
-import { getCopiedText, groupMessagesByDate, isLastInSequence, uriToBlob, ws } from "../utils";
+import { getCopiedText, groupMessagesByDate, height, isLastInSequence, uriToBlob, ws } from "../utils";
 import DateSeparator from "../components/DateSeperator";
 import ProfilePic from "../components/ProfilePic";
 import AnimatedHeader from "@/components/AnimatedHeader";
@@ -31,6 +31,7 @@ import * as Clipboard from "expo-clipboard";
 import CustomToast from "../components/CustomToast";
 import ReplyPreview from "../components/ReplyPreview";
 import { SectionList } from "react-native";
+import ReactionView from "@/components/ReactionView";
 
 const mediaOptions = [
   { name: "Images", icon: "image", type: "image" },
@@ -61,6 +62,38 @@ export default function MessagesList({ navigation, route }) {
   const selectedMessageCount = Object.keys(selectedMessages)?.length;
   const [toastMessage, setToastMessage] = useState('');
   const [previewMessage, setPreviewMessage] = useState(null);
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
+  const messageRefs = useRef({});
+  const screenHeight = height;
+  const [isReactionVisible, setIsReactionVisible] = useState(false);
+
+  const handleReactions = (message) => {
+    const ref = messageRefs.current[message._id];
+    if (!ref) return;
+
+    ref.measureInWindow((x, y, width, height) => {
+      let modalHeight = 56;
+      let newTop = y - modalHeight - 5; // Default above
+
+      if (newTop < 60) {
+        newTop = y + height + 5; // Place below if not enough space above
+      }
+
+      if (newTop + modalHeight > screenHeight) {
+        newTop = screenHeight - modalHeight - 20; // Keep within bounds
+      }
+
+      setModalPosition({ top: newTop, left: x });
+      setSelectedMessage(message);
+      setIsReactionVisible(true);
+    });
+  };
+
+  const closeReactionView = () => {
+    setIsReactionVisible(false);
+    setSelectedMessage(null);
+  }
 
   const sectionListRef = useRef(null);
 
@@ -320,6 +353,7 @@ export default function MessagesList({ navigation, route }) {
         renderSectionHeader={({ section: { title } }) => <DateSeparator date={title} />}
         renderItem={({ item: message, index, section }) => (
           <MessageItem
+            messageRefs={messageRefs}
             selectedCount={selectedMessageCount}
             selected={!!selectedMessages[message._id]}
             key={message._id}
@@ -332,6 +366,7 @@ export default function MessagesList({ navigation, route }) {
               if (message?.type === MESSAGE_TYPES.REPLY && message?.messageReply?._id) {
                 return scrollToMessage(message?.messageReply?._id)
               }
+              return handleReactions(message)
             }}
             loggedUserId={user?.userId}
             isLastInSequence={isLastInSequence(section?.data, index)}
@@ -412,7 +447,7 @@ export default function MessagesList({ navigation, route }) {
       )}
 
       {/* MEDIA BOTTOM SHEET */}
-      <CommonBottomSheet
+      {/* <CommonBottomSheet
         bottomSheetRef={bottomSheetRef}
         closeBottomSheet={() => bottomSheetRef.current.close()}
         snapPoints={["30%"]}
@@ -436,8 +471,13 @@ export default function MessagesList({ navigation, route }) {
             </TouchableOpacity>
           ))}
         </View>
-      </CommonBottomSheet>
+      </CommonBottomSheet> */}
       <CustomToast visible={toastMessage?.length > 0} message={toastMessage} onHide={() => setToastMessage('')} />
+      {!!selectedMessage && isReactionVisible && <ReactionView
+        modalPosition={modalPosition}
+        visible={!!selectedMessage}
+        closeReactionView={closeReactionView}
+      />}
     </SafeAreaView>
   );
 }
