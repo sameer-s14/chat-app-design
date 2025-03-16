@@ -10,10 +10,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   LayoutAnimation,
+  Keyboard,
+  Pressable,
 } from "react-native";
-import { Ionicons, MaterialCommunityIcons, Octicons } from "@expo/vector-icons";
-import { COLORS, SOCKET_EVENTS } from "../constants";
-import EmojiSelector from "react-native-emoji-selector";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { COLORS, MESSAGE_TYPES, SOCKET_EVENTS } from "../constants";
+import { EmojiKeyboard } from 'rn-emoji-keyboard';
 import * as ImagePicker from "expo-image-picker";
 import CommonBottomSheet from "../components/CommonBottomSheet";
 import * as DocumentPicker from "expo-document-picker";
@@ -28,6 +30,7 @@ import AnimatedHeader from "@/components/AnimatedHeader";
 import * as Clipboard from "expo-clipboard";
 import CustomToast from "../components/CustomToast";
 import ReplyPreview from "../components/ReplyPreview";
+import { SectionList } from "react-native";
 
 const mediaOptions = [
   { name: "Images", icon: "image", type: "image" },
@@ -58,6 +61,64 @@ export default function MessagesList({ navigation, route }) {
   const selectedMessageCount = Object.keys(selectedMessages)?.length;
   const [toastMessage, setToastMessage] = useState('');
   const [previewMessage, setPreviewMessage] = useState(null);
+
+  const sectionListRef = useRef(null);
+
+  const scrollToMessage = (messageId) => {
+    let sectionIndex = -1;
+    let itemIndex = -1;
+
+    groupedMessages.some((section, sIndex) => {
+      const index = section.data.findIndex((msg) => msg._id === messageId);
+      if (index !== -1) {
+        sectionIndex = sIndex;
+        itemIndex = index;
+        return true;
+      }
+      return false;
+    });
+
+    if (sectionIndex !== -1 && itemIndex !== -1) {
+      sectionListRef.current?.scrollToLocation({
+        sectionIndex,
+        itemIndex,
+        animated: true,
+        viewPosition: 0.5, // Adjusts where the message appears on the screen (center)
+      });
+    }
+  };
+
+
+  const handleEmojiSelect = (emoji) => {
+    setMessage((prev) => prev + emoji.emoji);
+  };
+
+  const handleEmojiDelete = () => {
+    setMessage((prev) => {
+      const characters = Array.from(prev);
+      characters.pop();
+      return characters.join("");
+    });
+  };
+
+  const toggleEmojiPicker = () => {
+    if (showEmojiPicker) {
+      // Hide emoji picker and focus input field
+      setShowEmojiPicker(false);
+      inputRef.current?.focus();
+    } else {
+      // Hide keyboard first, then show emoji picker
+      Keyboard.dismiss();
+      setTimeout(() => setShowEmojiPicker(true), 100);
+    }
+  };
+
+  // Handle input focus (ensures emoji picker closes)
+  const handleInputFocus = () => {
+    if (showEmojiPicker) {
+      setShowEmojiPicker(false);
+    }
+  };
 
   const sendMessage = (files?: any) => {
     if (previewMessage) {
@@ -251,48 +312,36 @@ export default function MessagesList({ navigation, route }) {
 
 
       {/* MESSAGES LIST */}
-      <FlatList
-        data={groupedMessages}
-        keyExtractor={(item) => item.date}
-        renderItem={({ item }) => (
-          <View>
-            <DateSeparator date={item.date} />
-            {item?.messages.map((message, index) => {
-              return (
-                <MessageItem
-                  selectedCount={selectedMessageCount}
-                  selected={!!selectedMessages[message._id]}
-                  key={message._id}
-                  item={message}
-                  onLongPress={() => OnMessageSelect(message)}
-                  onPress={() => {
-                    if (Object.keys(selectedMessages)?.length) {
-                      OnMessageSelect(message)
-                    }
-                  }}
-                  loggedUserId={user?.userId}
-                  isLastInSequence={isLastInSequence(item?.messages, index)}
-                />
-              )
-            })}
-          </View>
+      <SectionList
+        ref={sectionListRef}
+        sections={groupedMessages} // Make sure groupedMessages follows { title, data } structure
+        keyExtractor={(item) => item._id}
+        keyboardDismissMode="on-drag"
+        renderSectionHeader={({ section: { title } }) => <DateSeparator date={title} />}
+        renderItem={({ item: message, index, section }) => (
+          <MessageItem
+            selectedCount={selectedMessageCount}
+            selected={!!selectedMessages[message._id]}
+            key={message._id}
+            item={message}
+            onLongPress={() => { OnMessageSelect(message) }}
+            onPress={() => {
+              if (Object.keys(selectedMessages)?.length) {
+                return OnMessageSelect(message)
+              }
+              if (message?.type === MESSAGE_TYPES.REPLY && message?.messageReply?._id) {
+                return scrollToMessage(message?.messageReply?._id)
+              }
+            }}
+            loggedUserId={user?.userId}
+            isLastInSequence={isLastInSequence(section?.data, index)}
+          />
         )}
         contentContainerStyle={styles.messageList}
         inverted
       />
 
       {/* EMOJI PICKER */}
-      {showEmojiPicker && (
-        <View style={styles.emojiPicker}>
-          <EmojiSelector
-            onEmojiSelected={(emoji) => {
-              setMessage((prev) => prev + emoji);
-              setShowEmojiPicker(false);
-            }}
-          />
-        </View>
-      )}
-
       {previewMessage && <ReplyPreview
         replyPreview={previewMessage}
         onClose={() => setPreviewMessage(null)}
@@ -310,26 +359,57 @@ export default function MessagesList({ navigation, route }) {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.emojiButton}
-          disabled={true}
-          onPress={() => setShowEmojiPicker((prev) => !prev)}
+          onPress={toggleEmojiPicker}
         >
-          <Ionicons name="happy" size={24} color={COLORS.GRAY} />
+          {!showEmojiPicker ? <Ionicons name={"happy"} size={24} color={COLORS.GRAY} /> :
+            <MaterialCommunityIcons name="keyboard-outline" size={24} color="black" />}
         </TouchableOpacity>
         <TextInput
           ref={inputRef}
           style={[styles.input]}
           placeholder="Type a message..."
           placeholderTextColor={COLORS.TEXT_LIGHT}
-          value={message || "\n"}
-          onChangeText={(text) => setMessage(text.replace(/^\n$/, ""))}
+          value={message}
+          onChangeText={(text) => setMessage(text)}
           multiline={true}
           numberOfLines={6}
           scrollEnabled={true}
+          onFocus={handleInputFocus}
         />
         <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
           <Ionicons name="send" size={20} color={COLORS.WHITE} />
         </TouchableOpacity>
       </KeyboardAvoidingView>
+
+      {showEmojiPicker && (
+        <View style={[styles.emojiPicker, { position: 'relative' }]}>
+          <Pressable
+            style={{
+              padding: 10,
+              position: 'absolute',
+              alignItems: "center",
+              backgroundColor: "#f2f2f2",
+              borderBottomWidth: 1,
+              borderColor: "#ccc",
+              zIndex: 1,
+              borderStartStartRadius: 20,
+              borderStartEndRadius: 20,
+              paddingStart: 15,
+              top: 0,
+              right: 0
+            }}
+            onPress={handleEmojiDelete}
+          >
+            <Ionicons name="backspace-outline" size={24} color="black" />
+          </Pressable>
+          <EmojiKeyboard onEmojiSelected={handleEmojiSelect}
+            allowMultipleSelections={true}
+            categoryPosition={'top'}
+            enableRecentlyUsed={true}
+            styles={{ category: { container: { marginEnd: 50 } } }}
+          />
+        </View>
+      )}
 
       {/* MEDIA BOTTOM SHEET */}
       <CommonBottomSheet

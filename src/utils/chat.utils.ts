@@ -1,6 +1,7 @@
 
 export const groupMessagesByDate = (messages) => {
   const groupedMessages = {};
+
   messages.forEach((message) => {
     const date = new Date(message.createdAt).toDateString();
     if (!groupedMessages[date]) {
@@ -9,11 +10,12 @@ export const groupMessagesByDate = (messages) => {
     groupedMessages[date].push(message);
   });
 
-  return Object.entries(groupedMessages).map(([date, messages]) => ({
-    date,
-    messages,
+  return Object.entries(groupedMessages).map(([date, data]) => ({
+    title: date,
+    data,
   }));
 };
+
 
 export const addMessagesToGroup = (
   groupedMessages: Record<string, any[]>,
