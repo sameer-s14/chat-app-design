@@ -80,6 +80,12 @@ const MessageItem = React.memo(({ item, loggedUserId, isLastInSequence, selected
         );
     }
     const replyPreview = item?.messageReply;
+    const reactions = item?.reactions;
+    const { reactionList, totalCounts } = Object.keys(item?.reactions || {})?.reduce((acc: any, curr) => {
+        acc.reactionList = [...(acc.reactionList || []), curr];
+        acc.totalCounts += item?.reactions[curr]?.length || 0;
+        return acc;
+    }, { reactionList: [], totalCounts: 0 })
     return (
         <Pressable
             onLongPress={onLongPress}
@@ -90,6 +96,7 @@ const MessageItem = React.memo(({ item, loggedUserId, isLastInSequence, selected
                 selected && {
                     backgroundColor: "rgba(0, 123, 255, 0.1)",
                 },
+                totalCounts && { marginBottom: 15 },
                 isSender ? styles.rightMessageRow : styles.leftMessageRow,
             ]}
         >
@@ -110,7 +117,7 @@ const MessageItem = React.memo(({ item, loggedUserId, isLastInSequence, selected
             {!isSender && (
                 <ProfilePic name={item?.sender?.name} image={item?.sender?.profile} size={30} />
             )}
-            <View style={isSender ? styles.myMessage : styles.otherMessage}>
+            <View style={[{ position: 'relative' }, isSender ? styles.myMessage : styles.otherMessage]}>
                 {(item?.type === MESSAGE_TYPES.REPLY && replyPreview) && <ReplyPreview replyPreview={replyPreview} />}
                 <Text
                     style={[
@@ -128,6 +135,12 @@ const MessageItem = React.memo(({ item, loggedUserId, isLastInSequence, selected
                         })}
                     </Text>
                 )}
+                {reactionList?.length > 0 && <View style={{ position: 'absolute', bottom: -15, backgroundColor: COLORS.WHITE, flexDirection: 'row', borderRadius: 25, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 5, paddingVertical: 2 }}>
+                    {reactionList?.map((emoji, index) => {
+                        return <Text key={index} style={{ marginEnd: 3 }}>{emoji}</Text>
+                    })}
+                    <Text style={{ color: COLORS.DARK_SLATE_GRAY, marginHorizontal: 3 }}>{totalCounts}</Text>
+                </View>}
             </View>
         </Pressable>
     );

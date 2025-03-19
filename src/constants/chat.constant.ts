@@ -3,7 +3,8 @@ export enum SOCKET_EVENTS {
     SEND_MESSAGE = 'send-message',
     JOIN_CHAT = 'join-chat',
     RECEIVE_MESSAGE = 'receive-message',
-    REACTION = 'reaction'
+    REACTION = 'reaction',
+    RECEIVE_REACTION = 'receive-reaction'
 }
 
 export enum MESSAGE_TYPES {

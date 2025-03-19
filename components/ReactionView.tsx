@@ -6,7 +6,6 @@ const ReactionView = ({ modalPosition, visible, closeReactionView, onSelect }) =
 
   // Close the modal when tapping outside
   const closeModal = () => {
-    console.log("Closing modal...");
     closeReactionView();
   };
 

@@ -392,7 +392,8 @@ export default function MessagesList({ navigation, route }) {
           />
         )}
         contentContainerStyle={styles.messageList}
-        inverted
+        // inverted
+        // stickySectionHeadersEnabled={true} 
       />
 
       {/* EMOJI PICKER */}
@@ -497,7 +498,10 @@ export default function MessagesList({ navigation, route }) {
         modalPosition={modalPosition}
         visible={!!selectedMessage}
         onSelect={sendReaction}
-        closeReactionView={closeReactionView}
+        closeReactionView={() => {
+          setSelectedMessages({})
+          closeReactionView()
+        }}
       />}
     </SafeAreaView>
   );

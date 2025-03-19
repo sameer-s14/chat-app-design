@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 5,
         marginBottom: 5,
-        borderLeftColor: COLORS.PRIMARY,
+        borderLeftColor: COLORS.SUCCESS,
         borderLeftWidth: 3,
     },
     replyPreviewContent: {
