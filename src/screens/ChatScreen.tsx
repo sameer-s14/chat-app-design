@@ -17,7 +17,7 @@ import { useDispatch } from "react-redux";
 import { logout } from "../redux/authSlice";
 import { useGetAllChatsQuery } from "../api";
 import ConfirmationModal from "@/components/ConfirmationModal";
-import { CHAT_AVATAR_SIZE, HEADER_HEIGHT } from "../utils";
+import { HEADER_HEIGHT } from "../utils";
 import { Conversation } from "../interface";
 import ProfilePic from "../components/ProfilePic";
 import { COLORS } from "../constants";
@@ -36,7 +36,7 @@ const ChatScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const dispatch = useDispatch();
-  const chatData = data?.data?.chatsFound || [];
+  const chatData = data || [];
   const searchBarHeight = useRef(new Animated.Value(0)).current;
   const searchBarOpacity = useRef(new Animated.Value(0)).current;
 
@@ -115,7 +115,7 @@ const ChatScreen = ({ navigation }) => {
         navigation.navigate("MessagesList", { chatId: item._id })
       }}
     >
-      <ProfilePic name={item?.name} image={item?.image} isOnline={true} />
+      <ProfilePic name={item?.name} image={item?.image} isOnline={!!item?.isOnline} />
       <View style={styles.chatContent}>
         <View style={styles.chatHeader}>
           <Text style={styles.chatName}>{item.name}</Text>

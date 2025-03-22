@@ -191,6 +191,7 @@ export default function MessagesList({ navigation, route }) {
         socket.emit(SOCKET_EVENTS.REACTION, reactionData)
       }
       setSelectedMessage(null)
+      setSelectedMessages({})
     }
   };
   const dispatch = useDispatch();
@@ -208,7 +209,34 @@ export default function MessagesList({ navigation, route }) {
         );
       };
 
+      const handleNewReaction = (socketData: any) => {
+        setMessages((preMessages) => {
+          const updatedMessages = preMessages.map((data) => {
+            const reactions = data?.reactions || {};
+            if (data?._id === socketData?.messageId) {
+              if (reactions[socketData?.emoji]) {
+                reactions[socketData?.emoji] = [...reactions[socketData?.emoji], socketData?.sender];
+              } else {
+                reactions[socketData?.emoji] = [socketData?.sender];
+              }
+            }
+
+            return { ...(data || {}), reactions };
+          });
+
+          return updatedMessages;
+        })
+
+        // console.log('>>>>>>>>>>>>>>>>>>.', updatedMessages.length);
+        // setMessages(updatedMessages);
+        dispatch(
+          messagesApi?.util?.updateQueryData("getMessages", chatId, (draft) => {
+            draft?.data?.push(data);
+          }) as any
+        );
+      };
       socket?.on(SOCKET_EVENTS.RECEIVE_MESSAGE, handleNewMessage)
+      socket?.on(SOCKET_EVENTS.RECEIVE_REACTION, handleNewReaction)
       return () => {
         socket.off(SOCKET_EVENTS.RECEIVE_MESSAGE, handleNewMessage);
       };
@@ -367,7 +395,7 @@ export default function MessagesList({ navigation, route }) {
       <SectionList
         ref={sectionListRef}
         sections={groupedMessages} // Make sure groupedMessages follows { title, data } structure
-        keyExtractor={(item) => item._id}
+        keyExtractor={(_,index) =>index?.toString() }
         keyboardDismissMode="on-drag"
         renderSectionHeader={({ section: { title } }) => <DateSeparator date={title} />}
         renderItem={({ item: message, index, section }) => (
@@ -392,8 +420,8 @@ export default function MessagesList({ navigation, route }) {
           />
         )}
         contentContainerStyle={styles.messageList}
-        // inverted
-        // stickySectionHeadersEnabled={true} 
+      // inverted
+      // stickySectionHeadersEnabled={true} 
       />
 
       {/* EMOJI PICKER */}

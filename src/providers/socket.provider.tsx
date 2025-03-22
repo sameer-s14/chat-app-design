@@ -13,16 +13,14 @@ export const SocketProvider = ({ children }) => {
     const disptach = useDispatch()
     useEffect(() => {
         if (token) {
-            const newSocket = createSocketConnection(token);
-
-            newSocket.emit(SOCKET_EVENTS.SET_UP, { userId: user?.userId });
+            const newSocket = createSocketConnection(token, user?.userId);
             disptach(setSocket(newSocket))
 
             return () => {
                 newSocket.disconnect();
             };
         }
-    }, []);
+    }, [user]);
 
 
     return (

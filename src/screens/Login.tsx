@@ -14,7 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { CountryPicker } from "react-native-country-codes-picker";
 import CountryCodeHeader from "../components/CountryCodeHeader";
-import { isValidMobile } from "../utils";
+import { isValidMobile, ws } from "../utils";
 import { useLoginWithPhoneMutation } from "../api";
 import { useTranslation } from "react-i18next";
 import { COLORS } from "../constants";
@@ -90,6 +90,7 @@ const Login = ({ navigation }) => {
       <TouchableOpacity
         onPress={() => setModalVisible(true)}
         style={styles.countrySelector}
+        disabled={isLoading}
       >
         <Text style={styles.countryText}>
           {countryCode.flag} {countryCode.name} ({countryCode?.code})
@@ -104,7 +105,7 @@ const Login = ({ navigation }) => {
         ]}
       >
         <Icon name="phone" size={20} color={COLORS.SECONDARY} style={styles.icon} />
-        <TouchableOpacity onPress={() => setModalVisible(true)}>
+        <TouchableOpacity disabled={isLoading} onPress={() => setModalVisible(true)}>
           <Text style={styles.countryCode}>{countryCode?.code}</Text>
         </TouchableOpacity>
         <TextInput
@@ -112,6 +113,7 @@ const Login = ({ navigation }) => {
           placeholder={t("ENTER_PHONE")}
           placeholderTextColor={COLORS.TEXT_LIGHT}
           keyboardType="numeric"
+          editable={!isLoading}
           value={phoneNumber}
           onChangeText={handlePhoneChange}
           maxLength={15}
@@ -274,7 +276,7 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     backgroundColor: COLORS.ACCENT, // Green for the Continue button
-    width: "100%",
+    width: ws(120),
     padding: 15,
     borderRadius: 10,
     alignItems: "center",

@@ -1,9 +1,10 @@
 import io from "socket.io-client";
 import { BASE_URL } from ".";
 
-export const createSocketConnection = (token: string) => {
+export const createSocketConnection = (token: string, userId: string) => {
     return io(BASE_URL, {
         auth: { token },
+        query: { userId },
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 2000,
