@@ -174,7 +174,7 @@ export default function ChatInfo({ navigation, route }) {
                         <>
                             {/* GROUP IMAGE & NAME */}
                             <View style={styles.groupInfo}>
-                                <ProfilePic image={chatDetails?.image} name={chatDetails?.name} size={150} textStyle={{ fontSize: 100 }} />
+                                <ProfilePic image={chatDetails?.image} name={chatDetails?.name} size={150} textStyle={{ fontSize: 100 }} style={{ marginRight: 16 }} />
                                 <Text style={styles.groupName}>{chatDetails?.name}</Text>
                                 {chatDetails?.isGroup && <Text style={styles.memberCount}>{chatDetails?.users?.length} members</Text>}
                             </View>

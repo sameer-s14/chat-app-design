@@ -111,7 +111,7 @@ const MessageItem = React.memo(({ item, loggedUserId, isLastInSequence, selected
             ) : null}
 
             {!isSender && (
-                <ProfilePic name={item?.sender?.name} image={item?.sender?.profile} size={30} />
+                <ProfilePic name={item?.sender?.name} image={item?.sender?.profile} size={30} style={{ marginRight: 16 }} />
             )}
             <View style={[{ position: 'relative' }, isSender ? styles.myMessage : styles.otherMessage]}>
                 {(item?.type === MESSAGE_TYPES.REPLY && replyPreview) && <ReplyPreview replyPreview={replyPreview} />}

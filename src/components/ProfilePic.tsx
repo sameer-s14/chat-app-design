@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Image, Text, StyleSheet, ViewStyle, TextStyle } from "react-native";
+import { View, Image, Text, StyleSheet, ViewStyle, TextStyle, TouchableOpacity } from "react-native";
 
 interface ProfileProps {
   image?: string;
@@ -8,6 +8,7 @@ interface ProfileProps {
   size?: number; // Size of the profile
   style?: ViewStyle; // Custom styles for the container
   textStyle?: TextStyle; // Custom styles for the fallback text
+  onPress?: any
 }
 
 const ProfilePic: React.FC<ProfileProps> = ({
@@ -17,9 +18,11 @@ const ProfilePic: React.FC<ProfileProps> = ({
   size = 50,
   style,
   textStyle,
+  onPress
 }) => {
+  const Wrapper = onPress ? TouchableOpacity : View;
   return (
-    <View style={[styles.profileContainer, { width: size, height: size }, style]}>
+    <Wrapper onPress={onPress && onPress} style={[styles.profileContainer, { width: size, height: size }, style]}>
       {image ? (
         <Image source={{ uri: image }} style={[styles.profile, { borderRadius: size / 2 }]} />
       ) : (
@@ -28,14 +31,13 @@ const ProfilePic: React.FC<ProfileProps> = ({
         </View>
       )}
       {isOnline && <View style={styles.onlineIndicator} />}
-    </View>
+    </Wrapper>
   );
 };
 
 const styles = StyleSheet.create({
   profileContainer: {
     position: "relative",
-    marginRight: 16,
   },
   profile: {
     width: "100%",

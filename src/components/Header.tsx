@@ -32,7 +32,6 @@ const styles = StyleSheet.create({
         marginHorizontal: 10,
         fontSize: 18,
     },
-    backIcon: { marginHorizontal: 10 }
 });
 
 export default Header;

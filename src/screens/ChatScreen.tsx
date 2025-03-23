@@ -22,6 +22,7 @@ import { Conversation } from "../interface";
 import ProfilePic from "../components/ProfilePic";
 import { COLORS } from "../constants";
 import { setChats } from "../redux/socketSlice";
+import ProfileModal from "../components/ProfileModal";
 
 const MENU_OPTIONS = [
   { label: "New Group", icon: "people-outline" },
@@ -36,14 +37,19 @@ const ChatScreen = ({ navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [chatInfo, setChatInfo] = useState({});
   const dispatch = useDispatch();
   const searchBarHeight = useRef(new Animated.Value(0)).current;
   const searchBarOpacity = useRef(new Animated.Value(0)).current;
   const { chats, typingUsers } = useSelector((state) => state?.socket) || {};
 
+  function onImagePress(image) {
+    navigation.navigate('ImageFullScreen', { image })
+    setChatInfo({})
+  }
   useEffect(() => {
-    if (data) {
-      dispatch(setChats(data || []))
+    if (data?.data?.chatsFound) {
+      dispatch(setChats(data?.data?.chatsFound || []))
     }
   }, [dispatch, data])
   const handleShowModal = () => {
@@ -121,7 +127,7 @@ const ChatScreen = ({ navigation }) => {
         navigation.navigate("MessagesList", { chatId: item._id })
       }}
     >
-      <ProfilePic name={item?.name} image={item?.image} isOnline={!!item?.isOnline} />
+      <ProfilePic name={item?.name} image={item?.image} isOnline={!!item?.isOnline} onPress={() => setChatInfo(item)} />
       <View style={styles.chatContent}>
         <View style={styles.chatHeader}>
           <Text style={styles.chatName}>{item.name}</Text>
@@ -269,6 +275,21 @@ const ChatScreen = ({ navigation }) => {
           headingText="Are you sure?"
           subHeading="You are about to log out of your account."
         />
+
+        {/* Profile info modal  */}
+        {chatInfo?._id && <ProfileModal chatInfo={chatInfo} onClose={() => {
+          setChatInfo({})
+        }}
+          onImagePress={() => onImagePress(chatInfo?.image)}
+          onMessagePress={() => {
+            navigation.navigate("MessagesList", { chatId: chatInfo._id });
+            setChatInfo({})
+          }}
+          onInfoPress={() => {
+            navigation.navigate('ChatInfo', { chatId: chatInfo._id });
+            setChatInfo({});
+          }}
+        />}
       </SafeAreaView>
     </>
   );
@@ -361,6 +382,7 @@ const styles = StyleSheet.create({
   },
   chatContent: {
     flex: 1,
+    paddingLeft: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
     paddingVertical: 8,

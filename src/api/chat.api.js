@@ -83,23 +83,29 @@ export const chatApi = createApi({
             ],
         }),
         getAllChats: builder.query({
-            async queryFn(_arg, _queryApi, _extraOptions, fetchWithBQ) {
-                // Fetch all chats
-                const chatResponse = await fetchWithBQ("chats/all");
-                if (chatResponse.error) return { error: chatResponse.error };
-                // Fetch online users
-                const onlineUsersResponse = await fetchWithBQ("chats/online-users");
-                if (onlineUsersResponse.error) return { error: onlineUsersResponse.error };
+            // async queryFn(_arg, _queryApi, _extraOptions, fetchWithBQ) {
+            //     // Fetch all chats
+            //     const chatResponse = await fetchWithBQ("chats/all");
+            //     if (chatResponse.error) return { error: chatResponse.error };
+            //     // Fetch online users
+            //     const onlineUsersResponse = await fetchWithBQ("chats/online-users");
+            //     if (onlineUsersResponse.error) return { error: onlineUsersResponse.error };
 
-                // Merge online user data into chat list
-                const chats = chatResponse.data?.data?.chatsFound || [];
-                const onlineUsers = onlineUsersResponse?.data?.data || {};
+            //     // Merge online user data into chat list
+            //     const chats = chatResponse.data?.data?.chatsFound || [];
+            //     const onlineUsers = onlineUsersResponse?.data?.data || {};
 
-                const chatsWithOnlineStatus = chats.map(chat => ({
-                    ...chat,
-                    isOnline:  !!onlineUsers[chat?.userId]
-                }));
-                return { data: chatsWithOnlineStatus };
+            //     const chatsWithOnlineStatus = chats.map(chat => ({
+            //         ...chat,
+            //         isOnline:  !!onlineUsers[chat?.userId]
+            //     }));
+            //     return { data: chatsWithOnlineStatus };
+            // },
+            query: () => {
+                return ({
+                    url: `chats/all`,
+                    method: "GET",
+                })
             },
             providesTags: ["Chats"],
             keepUnusedDataFor: 10,

@@ -394,7 +394,7 @@ export default function MessagesList({ navigation, route }) {
             }}
             style={styles.headingSection}
           >
-            <ProfilePic name={chatDetails?.name} size={40} image={chatDetails?.image} />
+            <ProfilePic name={chatDetails?.name} size={40} image={chatDetails?.image} style={{ marginRight: 16 }} />
             <Text style={styles.headerText}>{chatDetails?.name}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setMenuVisible(true)} style={{ marginStart: 'auto' }}>
