@@ -3,6 +3,7 @@ export interface Conversation {
   name: string;
   image: string;
   isOnline?: boolean;
+  isGroup?: boolean;
   latestMessage?: {
     message?: string;
     type?: string;

@@ -67,6 +67,21 @@ export default function MessagesList({ navigation, route }) {
   const messageRefs = useRef({});
   const screenHeight = height;
   const [isReactionVisible, setIsReactionVisible] = useState(false);
+  let typingTimeout: any = useRef(null);
+
+  const handleTyping = (text: string) => {
+    setMessage(text);
+
+    if (socket) {
+      socket.emit(SOCKET_EVENTS.TYPING, { chatId });
+
+      // Stop typing event after 2 seconds of inactivity
+      if (typingTimeout.crrent) clearTimeout(typingTimeout.crrent);
+      typingTimeout.crrent = setTimeout(() => {
+        socket.emit(SOCKET_EVENTS.STOP_TYPING, { chatId });
+      }, 2000);
+    }
+  };
 
   const handleReactions = (message) => {
     const ref = messageRefs.current[message._id];
@@ -226,9 +241,6 @@ export default function MessagesList({ navigation, route }) {
 
           return updatedMessages;
         })
-
-        // console.log('>>>>>>>>>>>>>>>>>>.', updatedMessages.length);
-        // setMessages(updatedMessages);
         dispatch(
           messagesApi?.util?.updateQueryData("getMessages", chatId, (draft) => {
             draft?.data?.push(data);
@@ -238,6 +250,7 @@ export default function MessagesList({ navigation, route }) {
       socket?.on(SOCKET_EVENTS.RECEIVE_MESSAGE, handleNewMessage)
       socket?.on(SOCKET_EVENTS.RECEIVE_REACTION, handleNewReaction)
       return () => {
+        socket.emit(SOCKET_EVENTS.LEAVE_CHAT, { userId: user?.userId, chatId });
         socket.off(SOCKET_EVENTS.RECEIVE_MESSAGE, handleNewMessage);
       };
     }
@@ -395,7 +408,7 @@ export default function MessagesList({ navigation, route }) {
       <SectionList
         ref={sectionListRef}
         sections={groupedMessages} // Make sure groupedMessages follows { title, data } structure
-        keyExtractor={(_,index) =>index?.toString() }
+        keyExtractor={(_, index) => index?.toString()}
         keyboardDismissMode="on-drag"
         renderSectionHeader={({ section: { title } }) => <DateSeparator date={title} />}
         renderItem={({ item: message, index, section }) => (
@@ -453,7 +466,7 @@ export default function MessagesList({ navigation, route }) {
           placeholder="Type a message..."
           placeholderTextColor={COLORS.TEXT_LIGHT}
           value={message}
-          onChangeText={(text) => setMessage(text)}
+          onChangeText={(text) => handleTyping(text)}
           multiline={true}
           numberOfLines={6}
           scrollEnabled={true}

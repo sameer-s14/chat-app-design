@@ -13,7 +13,7 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../redux/authSlice";
 import { useGetAllChatsQuery } from "../api";
 import ConfirmationModal from "@/components/ConfirmationModal";
@@ -21,6 +21,7 @@ import { HEADER_HEIGHT } from "../utils";
 import { Conversation } from "../interface";
 import ProfilePic from "../components/ProfilePic";
 import { COLORS } from "../constants";
+import { setChats } from "../redux/socketSlice";
 
 const MENU_OPTIONS = [
   { label: "New Group", icon: "people-outline" },
@@ -30,16 +31,21 @@ const MENU_OPTIONS = [
 ];
 
 const ChatScreen = ({ navigation }) => {
-  const { data, isLoading, isError } = useGetAllChatsQuery(null);
+  const { data, isLoading, isError, refetch, isFetching } = useGetAllChatsQuery(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const dispatch = useDispatch();
-  const chatData = data || [];
   const searchBarHeight = useRef(new Animated.Value(0)).current;
   const searchBarOpacity = useRef(new Animated.Value(0)).current;
+  const { chats, typingUsers } = useSelector((state) => state?.socket) || {};
 
+  useEffect(() => {
+    if (data) {
+      dispatch(setChats(data || []))
+    }
+  }, [dispatch, data])
   const handleShowModal = () => {
     setModalVisible(true);
   };
@@ -97,7 +103,7 @@ const ChatScreen = ({ navigation }) => {
   }, [isSearchVisible]);
 
   // Filter chats based on search query
-  const filteredChats = chatData.filter((chat) => {
+  const filteredChats = chats.filter((chat) => {
     const query = searchQuery.toLowerCase();
     return (
       chat.name.toLowerCase().includes(query) ||
@@ -129,9 +135,13 @@ const ChatScreen = ({ navigation }) => {
           )}
         </View>
         <View style={styles.messageContainer}>
-          <Text style={styles.chatMessage} numberOfLines={1}>
-            {item.latestMessage?.message || "No messages yet"}
-          </Text>
+          {typingUsers[item?._id] ? <Text style={[styles.chatMessage, { color: COLORS.SUCCESS, fontWeight: 'bold' }]} numberOfLines={1}>
+            {item?.isGroup ? `${typingUsers[item?._id]?.name} is typing...` : `typing...`}
+          </Text> :
+            <Text style={styles.chatMessage} numberOfLines={1}>
+              {item.latestMessage?.message || "No messages yet"}
+            </Text>
+          }
           {item.unreadCount > 0 && (
             <View style={styles.unreadContainer}>
               <Text style={styles.unreadText}>{item.unreadCount}</Text>
@@ -201,6 +211,8 @@ const ChatScreen = ({ navigation }) => {
         {/* Chat List */}
         {!isLoading && <>
           <FlatList
+            refreshing={isFetching}
+            onRefresh={refetch}
             data={filteredChats}
             keyExtractor={(item) => item._id}
             renderItem={renderChatItem}
