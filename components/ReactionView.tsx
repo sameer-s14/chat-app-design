@@ -1,7 +1,7 @@
 import React from "react";
 import { FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-const ReactionView = ({ modalPosition, visible, closeReactionView, onSelect }) => {
+const ReactionView = ({ modalPosition, modalOverlayStyle, visible, closeReactionView, onSelect }) => {
   const reactions = ["👍", "❤️", "😂", "😮", "😢", "🙏", "😎", "😍", "🥰", "😘", "😡", "🤬"]; // Default reactions
 
   // Close the modal when tapping outside
@@ -12,7 +12,7 @@ const ReactionView = ({ modalPosition, visible, closeReactionView, onSelect }) =
   return (
     <Modal transparent visible={!!visible} animationType="fade">
       <TouchableOpacity
-        style={styles.modalOverlay}
+        style={[styles.modalOverlay, modalOverlayStyle]}
         activeOpacity={1} // Prevent opacity change on press
         onPress={closeModal}
       >
@@ -44,8 +44,7 @@ const ReactionView = ({ modalPosition, visible, closeReactionView, onSelect }) =
 
 const styles = StyleSheet.create({
   modalOverlay: {
-    flex: 1,
-    // backgroundColor: 
+    // flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },

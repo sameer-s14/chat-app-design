@@ -65,7 +65,8 @@ const styles = StyleSheet.create({
         marginStart: 'auto'
     },
     iconButton: {
-        marginHorizontal: 10,
+        marginHorizontal: 5,
+        padding: 7,
     },
 });
 

@@ -6,6 +6,7 @@ import { COLORS, MESSAGE_TYPES } from "@/src/constants";
 import ProfilePic from "@/src/components/ProfilePic";
 import ReplyPreview from "@/src/components/ReplyPreview";
 import ReactionBubble from "./ReactionBubble";
+import { hs, ws } from "@/src/utils";
 const MessageItem = React.memo(({ item, loggedUserId, isLastInSequence, selectedCount, onLongPress, selected, onPress, messageRefs }) => {
     const isSender = item?.sender?._id === loggedUserId;
 
@@ -113,8 +114,9 @@ const MessageItem = React.memo(({ item, loggedUserId, isLastInSequence, selected
             {!isSender && (
                 <ProfilePic name={item?.sender?.name} image={item?.sender?.profile} size={30} style={{ marginRight: 16 }} />
             )}
-            <View style={[{ position: 'relative' }, isSender ? styles.myMessage : styles.otherMessage]}>
+            <View style={[{ position: 'relative', minWidth: ws(70), minHeight: hs(50) }, isSender ? styles.myMessage : styles.otherMessage]}>
                 {(item?.type === MESSAGE_TYPES.REPLY && replyPreview) && <ReplyPreview replyPreview={replyPreview} />}
+
                 <Text
                     style={[
                         styles.messageText,
@@ -123,14 +125,14 @@ const MessageItem = React.memo(({ item, loggedUserId, isLastInSequence, selected
                 >
                     {item?.message}
                 </Text>
-                {isLastInSequence && (
-                    <Text style={styles.messageTime}>
-                        {new Date(item.createdAt).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                        })}
-                    </Text>
-                )}
+                {/* {isLastInSequence && ( */}
+                <Text style={styles.messageTime}>
+                    {new Date(item.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    })}
+                </Text>
+                {/* )} */}
                 {<ReactionBubble reactions={item?.reactions} />}
             </View>
         </Pressable>
@@ -179,7 +181,8 @@ const styles = StyleSheet.create({
     messageTime: {
         fontSize: 12,
         color: COLORS.TEXT_LIGHT,
-        marginTop: 5,
+        paddingStart: 5,
+        marginTop: 2,
         alignSelf: "flex-end",
     },
     eventText: {

@@ -18,4 +18,5 @@ export enum COLORS {
     WHITE = "#FFFFFF",         // White
     BLACK = "#000000",         // Black
     LINK = "#007AFF",
+    LIGHT_PRIMARY = "#B392F0",
 }

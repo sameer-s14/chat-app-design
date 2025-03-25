@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
         padding: 10,
         marginBottom: 10,
         borderLeftWidth: 3,
-        borderLeftColor: COLORS.PRIMARY,
+        borderLeftColor: COLORS.SUCCESS,
     },
     senderName: {
         fontSize: 14,

@@ -23,7 +23,7 @@ import { useFinalizeUploadMutation, useGetChatDetailsQuery, useGetMessagesQuery,
 import { useDispatch, useSelector } from "react-redux";
 import { IReaction, ISendMessage } from "../interface";
 import MessageItem from "@/components/MessageItem";
-import { getCopiedText, groupMessagesByDate, height, isLastInSequence, uriToBlob, ws } from "../utils";
+import { getCopiedText, groupMessagesByDate, height, hs, isLastInSequence, uriToBlob, ws } from "../utils";
 import DateSeparator from "../components/DateSeperator";
 import ProfilePic from "../components/ProfilePic";
 import AnimatedHeader from "@/components/AnimatedHeader";
@@ -62,12 +62,34 @@ export default function MessagesList({ navigation, route }) {
   const selectedMessageCount = Object.keys(selectedMessages)?.length;
   const [toastMessage, setToastMessage] = useState('');
   const [previewMessage, setPreviewMessage] = useState(null);
-  const [selectedMessage, setSelectedMessage] = useState(null);
+  const selectedMessageRef = useRef(null);
+
   const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
   const messageRefs = useRef({});
   const screenHeight = height;
   const [isReactionVisible, setIsReactionVisible] = useState(false);
+
+  function emptySelectedMessages() {
+    setSelectedMessages({});
+    if (isReactionVisible) {
+      setIsReactionVisible(false);
+    }
+  }
+  useEffect(() => {
+    if (selectedMessageCount === 1) {
+      selectedMessageRef.current = Object.values(selectedMessages)[0];
+    } else {
+      selectedMessageRef.current = null
+    }
+    console.log(selectedMessageRef?.current, isReactionVisible)
+  }, [selectedMessageCount])
   let typingTimeout: any = useRef(null);
+  const userNames = (chatDetails?.users || [])?.map((item) => {
+    if (item?.id !== user?.userId) {
+      return item?.name;
+    }
+    return 'You'
+  })
 
   const handleTyping = (text: string) => {
     setMessage(text);
@@ -100,14 +122,12 @@ export default function MessagesList({ navigation, route }) {
       }
 
       setModalPosition({ top: newTop, left: x });
-      setSelectedMessage(message);
       setIsReactionVisible(true);
     });
   };
 
   const closeReactionView = () => {
     setIsReactionVisible(false);
-    setSelectedMessage(null);
   }
 
   const sectionListRef = useRef(null);
@@ -195,19 +215,18 @@ export default function MessagesList({ navigation, route }) {
   };
 
   const sendReaction = (emoji) => {
-    if (selectedMessage?._id) {
+    if (selectedMessageRef?.current?._id) {
       const reactionData: IReaction = {
         chatId: chatId,
-        messageId: selectedMessage?._id,
+        messageId: selectedMessageRef?.current?._id,
         senderId: user?.userId,
         emoji: emoji
       }
       if (socket?.connected && chatId) {
         socket.emit(SOCKET_EVENTS.REACTION, reactionData)
       }
-      setSelectedMessage(null)
-      setSelectedMessages({})
     }
+    emptySelectedMessages();
   };
   const dispatch = useDispatch();
 
@@ -357,24 +376,24 @@ export default function MessagesList({ navigation, route }) {
       {/* ANIMATED HEADER */}
       <AnimatedHeader
         selectedMessages={selectedMessages || {}}
-        onBack={() => setSelectedMessages({})}
+        onBack={emptySelectedMessages}
         onReply={() => {
-          setPreviewMessage(Object.values(selectedMessages)[0] || null)
-          setSelectedMessages({})
+          setPreviewMessage(selectedMessageRef?.current);
+          emptySelectedMessages()
         }}
         onCopy={async () => {
           const sortedMessages = (Object.values(selectedMessages) || [])?.sort((a, b) => new Date(a?.createdAt) - new Date(b?.createdAt));
           const messages = getCopiedText(sortedMessages)
           if (messages) {
             await Clipboard.setStringAsync(messages);
-            setSelectedMessages({})
+            emptySelectedMessages()
             setToastMessage(`${selectedMessageCount} copied`)
           }
         }}
         onDelete={() => {
           const messageId = Object.keys(selectedMessages)[0];
           console.log('Delete message:', messageId);
-          setSelectedMessages({});
+          emptySelectedMessages();
         }}
         onForward={() => {
           const messageId = Object.keys(selectedMessages)[0];
@@ -395,7 +414,11 @@ export default function MessagesList({ navigation, route }) {
             style={styles.headingSection}
           >
             <ProfilePic name={chatDetails?.name} size={40} image={chatDetails?.image} style={{ marginRight: 16 }} />
-            <Text style={styles.headerText}>{chatDetails?.name}</Text>
+            <View style={{ flexDirection: 'column' }}>
+              <Text style={styles.headerText}>{chatDetails?.name}</Text>
+              {chatDetails?.isGroup && <Text numberOfLines={1} ellipsizeMode="tail" style={{ fontSize: 12, color: COLORS?.TEXT_DARK }}>{userNames?.toString()?.replaceAll(',', ', ')}</Text>
+              }
+            </View>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setMenuVisible(true)} style={{ marginStart: 'auto' }}>
             <Ionicons name="ellipsis-vertical" size={24} color={COLORS.BLACK} />
@@ -535,14 +558,13 @@ export default function MessagesList({ navigation, route }) {
       </CommonBottomSheet> */}
       <CustomToast visible={toastMessage?.length > 0} message={toastMessage} onHide={() => setToastMessage('')} />
 
-      {!!selectedMessage && isReactionVisible && <ReactionView
+      {isReactionVisible && <ReactionView
         modalPosition={modalPosition}
-        visible={!!selectedMessage}
+        // modalOverlayStyle={{ height: height - hs(70), marginTop: hs(70)}}
+        modalOverlayStyle={{ flex: 1 }}
+        visible={isReactionVisible}
         onSelect={sendReaction}
-        closeReactionView={() => {
-          setSelectedMessages({})
-          closeReactionView()
-        }}
+        closeReactionView={closeReactionView}
       />}
     </SafeAreaView>
   );
@@ -590,7 +612,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 18,
     fontWeight: "bold",
-    color: COLORS.TEXT_DARK, marginVertical: 10,
+    color: COLORS.TEXT_DARK,
   },
   messageList: {
     paddingBottom: 10,

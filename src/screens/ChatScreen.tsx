@@ -223,6 +223,11 @@ const ChatScreen = ({ navigation }) => {
             keyExtractor={(item) => item._id}
             renderItem={renderChatItem}
             contentContainerStyle={styles.listContent}
+            onScroll={() => {
+              if (isSearchVisible && !searchQuery) {
+                setIsSearchVisible(false);
+              }
+            }}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>No conversations found</Text>
@@ -254,7 +259,10 @@ const ChatScreen = ({ navigation }) => {
                     if (option.label === "Logout") {
                       handleShowModal();
                     } else if (option.label === "Settings") {
-                      navigation.navigate("Settings");
+                      navigation.navigate("Profile");
+                    }
+                    else if (option.label === "New Group") {
+                      navigation.navigate('NewGroup')
                     }
                   }}
                 >
